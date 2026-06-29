@@ -1,0 +1,481 @@
+import SnapActionCore
+import SwiftUI
+
+struct ContentView: View {
+    let appState: AppState
+
+    var body: some View {
+        NavigationSplitView {
+            SidebarView(appState: appState)
+        } detail: {
+            ZStack {
+                AmbientSignalBackground()
+                DetailView(appState: appState)
+            }
+        }
+        .searchable(text: Bindable(appState).historySearchText, prompt: "Search history")
+        .toolbar {
+            ToolbarItemGroup {
+                Button {
+                    appState.captureScreenSnapshot()
+                } label: {
+                    Label("Capture Screen", systemImage: "rectangle.dashed")
+                }
+                .accessibilityLabel("Capture Screen")
+                .help("Capture the screen")
+                Button {
+                    appState.captureDemo()
+                } label: {
+                    Label("Capture Demo", systemImage: "viewfinder")
+                }
+                .accessibilityLabel("Capture Demo")
+                .help("Run the sample capture")
+                Button {
+                    appState.importImageForOCR()
+                } label: {
+                    Label("Import Image", systemImage: "photo.badge.magnifyingglass")
+                }
+                .accessibilityLabel("Import Image")
+                .help("Import an image for OCR")
+                Button {
+                    appState.refreshPermissionStatus()
+                } label: {
+                    Label("Refresh Status", systemImage: "arrow.clockwise")
+                }
+                .accessibilityLabel("Refresh Status")
+                .help("Refresh permission and model status")
+            }
+        }
+    }
+}
+
+struct SidebarView: View {
+    let appState: AppState
+
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Capture", systemImage: "sparkles.rectangle.stack")
+                        .font(.headline)
+                    Text(appState.modelStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                .padding(.vertical, 6)
+            }
+
+            Section("Suggested Actions") {
+                if appState.candidates.isEmpty {
+                    Text("No suggestions")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(appState.candidates) { candidate in
+                        CandidateSidebarRow(
+                            candidate: candidate,
+                            isSelected: appState.selectedCandidateID == candidate.id
+                        )
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.snappy(duration: 0.24)) {
+                                appState.selectedCandidateID = candidate.id
+                            }
+                        }
+                    }
+                }
+            }
+
+            Section("History") {
+                if appState.filteredHistory.isEmpty {
+                    Text("No history")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(appState.filteredHistory) { entry in
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(entry.candidates.first?.title ?? "Captured text")
+                                .lineLimit(1)
+                            Text(entry.result?.displayMessage ?? entry.capturedAt.formatted())
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("SnapAction")
+    }
+}
+
+struct CandidateSidebarRow: View {
+    let candidate: ActionCandidate
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(candidate.validationState.displayTone.color.opacity(isSelected ? 0.20 : 0.10))
+                Image(systemName: candidate.kind.symbolName)
+                    .foregroundStyle(candidate.validationState.displayTone.color)
+            }
+            .frame(width: 28, height: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(candidate.title.isEmpty ? candidate.kind.displayName : candidate.title)
+                    .lineLimit(1)
+                Text(candidate.kind.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 4)
+            Circle()
+                .fill(candidate.validationState.displayTone.color)
+                .frame(width: 7, height: 7)
+        }
+        .padding(.vertical, 5)
+        .scaleEffect(isSelected ? 1.015 : 1)
+        .animation(.smooth(duration: 0.2), value: isSelected)
+    }
+}
+
+struct DetailView: View {
+    let appState: AppState
+
+    var body: some View {
+        VStack(spacing: 0) {
+            StatusStrip(appState: appState)
+            HSplitView {
+                OCRPreview(document: appState.currentDocument)
+                    .frame(minWidth: 360)
+                CandidateDetailView(appState: appState, candidate: appState.selectedCandidate)
+                    .frame(minWidth: 420)
+            }
+        }
+        .navigationTitle("Review")
+    }
+}
+
+struct StatusStrip: View {
+    let appState: AppState
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ProcessingHalo(isActive: appState.isProcessing)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(appState.statusMessage)
+                    .font(.callout.weight(.semibold))
+                    .contentTransition(.opacity)
+                Text(appState.isProcessing ? "Analyzing pixels, text, and intent" : "Local-first actions, confirmed by you")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 16)
+            SnapMetricPill(icon: "apple.intelligence", text: appState.modelStatus, tone: .neutral)
+            SnapMetricPill(icon: "rectangle.dashed", text: appState.screenCaptureStatus, tone: .neutral)
+            SnapMetricPill(icon: "doc.on.clipboard", text: appState.clipboardStatus, tone: .success)
+        }
+        .lineLimit(1)
+        .padding(14)
+        .snapGlassPanel(interactive: true, cornerRadius: 22)
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 8)
+    }
+}
+
+struct OCRPreview: View {
+    let document: OCRDocument?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("OCR Stream", systemImage: "text.viewfinder")
+                    .font(.headline)
+                Spacer()
+                if let document {
+                    Text("\(document.blocks.count) blocks")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            ZStack(alignment: .topLeading) {
+                ScrollView {
+                    Text(document?.normalizedText.isEmpty == false ? document!.normalizedText : "Capture the screen or import an image. SnapAction will turn visual text into clean, typed actions.")
+                        .font(.system(.body, design: .monospaced))
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(18)
+                }
+                if document == nil {
+                    EmptyCapturePulse()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .snapGlassPanel(cornerRadius: 18)
+        }
+        .padding(.leading, 18)
+        .padding(.vertical, 14)
+    }
+}
+
+struct CandidateDetailView: View {
+    let appState: AppState
+    let candidate: ActionCandidate?
+    @State private var editedTitle = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let candidate {
+                VStack(alignment: .leading, spacing: 18) {
+                    CandidateHeader(candidate: candidate)
+                    ClipboardShelf(appState: appState)
+                    TextField("Title", text: $editedTitle)
+                        .textFieldStyle(.roundedBorder)
+                        .onAppear {
+                            editedTitle = candidate.title
+                        }
+                    FieldList(candidate: candidate)
+                    ValidationPanel(state: candidate.validationState)
+                    HStack {
+                        Button {
+                            appState.execute(candidate: candidate, editedTitle: editedTitle, confirmed: true)
+                        } label: {
+                            Label(candidate.kind.confirmLabel, systemImage: "checkmark.circle")
+                        }
+                        .buttonStyle(.glassProminent)
+                        .disabled(!candidate.isExecutable)
+                        .accessibilityLabel(candidate.kind.confirmLabel)
+                        .help(candidate.kind.confirmLabel)
+
+                        Button {
+                            appState.execute(candidate: candidate, editedTitle: editedTitle, confirmed: false)
+                        } label: {
+                            Label("Test Gate", systemImage: "lock")
+                        }
+                        .buttonStyle(.glass)
+                        .accessibilityLabel("Test Gate")
+                        .help("Verify the confirmation gate without writing")
+                    }
+                }
+                .padding(18)
+                .snapGlassPanel(tone: candidate.validationState.displayTone, interactive: true, cornerRadius: 24)
+                .transition(.scale(scale: 0.98).combined(with: .opacity))
+                Spacer()
+            } else {
+                EmptyReviewSurface(appState: appState)
+            }
+        }
+        .padding(.trailing, 18)
+        .padding(.vertical, 14)
+        .id(candidate?.id)
+        .animation(.smooth(duration: 0.28), value: candidate?.id)
+    }
+}
+
+struct CandidateHeader: View {
+    let candidate: ActionCandidate
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 5) {
+                Label(candidate.kind.displayName, systemImage: candidate.kind.symbolName)
+                    .font(.title3.weight(.semibold))
+                Text(candidate.confidenceBand.label + " confidence")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            ConfidenceGauge(value: candidate.confidence, tone: candidate.validationState.displayTone.color)
+                .overlay {
+                    Text(candidate.confidence, format: .percent.precision(.fractionLength(0)))
+                        .font(.caption2.weight(.bold))
+                }
+        }
+    }
+}
+
+struct FieldList: View {
+    let candidate: ActionCandidate
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Fields")
+                .font(.headline)
+            if candidate.fields.isEmpty {
+                Text("No structured fields")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(candidate.fields.sorted(by: { $0.key.rawValue < $1.key.rawValue }), id: \.key) { key, value in
+                    HStack(alignment: .top) {
+                        Text(key.rawValue)
+                            .font(.caption.weight(.semibold))
+                            .frame(width: 100, alignment: .leading)
+                            .foregroundStyle(.secondary)
+                        Text(value)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(10)
+                    .background(.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
+                }
+            }
+        }
+    }
+}
+
+struct ValidationPanel: View {
+    let state: ValidationState
+
+    var body: some View {
+        Label(state.message, systemImage: state.symbolName)
+            .foregroundStyle(state.displayTone.color)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .snapGlassPanel(tone: state.displayTone, cornerRadius: 14)
+    }
+}
+
+struct EmptyCapturePulse: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 22)
+                    .stroke(.primary.opacity(0.13), style: StrokeStyle(lineWidth: 1.2, dash: [8, 8]))
+                    .frame(width: 180, height: 112)
+                Image(systemName: "viewfinder")
+                    .font(.system(size: 34, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            Text("Waiting for a capture")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
+    }
+}
+
+struct EmptyReviewSurface: View {
+    let appState: AppState
+
+    var body: some View {
+        VStack(spacing: 18) {
+            ProcessingHalo(isActive: false)
+                .scaleEffect(1.45)
+                .padding(.bottom, 8)
+            Text("Ready for the next snap")
+                .font(.title3.weight(.semibold))
+            Text("Capture the screen, run the demo, or import an image. Suggestions appear here as editable, confirmed actions.")
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+            HStack {
+                Button {
+                    appState.captureScreenSnapshot()
+                } label: {
+                    Label("Capture Screen", systemImage: "rectangle.dashed")
+                }
+                .buttonStyle(.glassProminent)
+                .accessibilityLabel("Capture Screen")
+                .help("Capture the screen")
+
+                Button {
+                    appState.captureDemo()
+                } label: {
+                    Label("Demo", systemImage: "sparkles")
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel("Demo")
+                .help("Run the sample capture")
+            }
+            ClipboardShelf(appState: appState)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
+        .snapGlassPanel(interactive: true, cornerRadius: 24)
+    }
+}
+
+struct ClipboardShelf: View {
+    let appState: AppState
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Label(appState.clipboardStatus, systemImage: "doc.on.clipboard")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            Button {
+                appState.restoreSavedClipboard()
+            } label: {
+                Label("Restore Clipboard", systemImage: "arrow.counterclockwise")
+            }
+            .buttonStyle(.glass)
+            .controlSize(.small)
+            .disabled(appState.lastClipboardSnapshot == nil)
+            .accessibilityLabel("Restore Clipboard")
+            .help("Restore the last SnapAction clipboard payload")
+        }
+        .padding(10)
+        .snapGlassPanel(tone: appState.lastClipboardSnapshot == nil ? .neutral : .success, interactive: appState.lastClipboardSnapshot != nil, cornerRadius: 14)
+    }
+}
+
+extension ActionKind {
+    var symbolName: String {
+        switch self {
+        case .reminder:
+            "checklist"
+        case .calendarEvent:
+            "calendar.badge.plus"
+        case .textTable:
+            "text.viewfinder"
+        }
+    }
+
+    var confirmLabel: String {
+        switch self {
+        case .reminder:
+            "Create Reminder"
+        case .calendarEvent:
+            "Create Event"
+        case .textTable:
+            "Copy Text"
+        }
+    }
+}
+
+extension ValidationState {
+    var message: String {
+        switch self {
+        case .pending:
+            "Not validated yet"
+        case .valid:
+            "Valid. Review fields before confirming."
+        case .warning(let message), .invalid(let message):
+            message
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .pending:
+            "clock"
+        case .valid:
+            "checkmark.seal"
+        case .warning:
+            "exclamationmark.triangle"
+        case .invalid:
+            "xmark.octagon"
+        }
+    }
+
+    var isInvalid: Bool {
+        if case .invalid = self { return true }
+        return false
+    }
+}
