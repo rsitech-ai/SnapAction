@@ -1,0 +1,170 @@
+{
+  "application": {
+    "build_system": "Swift Package Manager",
+    "community_name": "SnapAction Community",
+    "minimum_macos_version": "26.0",
+    "name": "SnapAction",
+    "platform": "macOS",
+    "source_targets": [
+      "SnapActionApp",
+      "SnapActionCore"
+    ],
+    "version": "0.1.0"
+  },
+  "dependencies": {
+    "apple_system_frameworks": [
+      "AppKit",
+      "CoreGraphics",
+      "EventKit",
+      "Foundation",
+      "FoundationModels",
+      "OSLog",
+      "Observation",
+      "ScreenCaptureKit",
+      "SwiftUI",
+      "Vision"
+    ],
+    "external_swift_package_count": 0,
+    "external_swift_packages": [],
+    "redistributed_third_party_packages": []
+  },
+  "evidence_inputs": {
+    "Config/Community.example.env": "5ae7f815276532fd07bee1ff4c71ed8264099895dddefd608841bef8f9182f3f",
+    "Package.swift": "6fe9244ec0f9670240a6596d7738f118f534f8653941d4d704cd6b7ae5e0f395",
+    "docs/community-build/README.md": "149d18961914a90ac03938179fe68c23c9f2220432d8adb7774fae752d3590fb",
+    "docs/open-source/BLOCKERS.md": "a006e76eec703fd38242a63f0820adac751ead0ff06b53c9850d72c246b4d328",
+    "docs/open-source/COMMUNITY_BUILD.md": "602249b783191bb29d01a2edd1de058e1d621e48771dbab10b3181435564258e",
+    "docs/open-source/GOVERNANCE_REVIEW.md": "87633550ec15472c2ae0d0e5c08845f8b4e1268493e933e7837c60b9a32be6e7",
+    "docs/open-source/IP_INVENTORY.md": "cfbb95097c344a513d0780fad36be87d8e560a964cbb1014c4732ec414b880af",
+    "docs/open-source/LICENSE_MAP.md": "fbbbc7ab2d7f2ce54357e19e039aa34638df4ee928d2a2c9ce978a459fb61483",
+    "docs/open-source/OPEN_SOURCE_STATUS.md": "3f73c2f9b3df7792739eda323c3dff8c1643f63b104cafb5eac9bad95b4d2278",
+    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "921e29d4cd28dce5b4b31c3b54055e812c1a93ea3a583de999cab7afc2ca872f",
+    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "d175ac07da4c9b83fe656c2f59dd57e84d22da0c1a02baea6b06cfd5137ff8c3",
+    "docs/open-source/SECRET_AUDIT.md": "bb9168182cb47f70efe8aa3986811071a15d921ff7aa883f8081a081ff562719",
+    "docs/open-source/SECURITY_READINESS.md": "f6867c36d157f64cf41180ce843ed495ced6e8d9ee53af6ede248a8749f79610",
+    "docs/open-source/SUPPLY_CHAIN_READINESS.md": "a002ab92f1154ebef0c9384e317fa96cb6af0bbf3d2c6b04b8cc9ed9a79f2f0e",
+    "docs/open-source/THIRD_PARTY_INVENTORY.md": "98053a6e6e1a7ffb2a3590f78ec04e7b721c19a46a5bfce3123bc2a62599b962",
+    "docs/open-source/TRADEMARK_REVIEW.md": "463a2804ffe20277177cf51c066569036a0a77b6b0a41e6faa39b97fd87e2d26",
+    "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md": "b42d486b1127af1e81e3d02f9481c9a4c2c3a7e49a4c8b70e3f7ac41d9546eaf",
+    "script/build_and_run.sh": "f725fab92f36c2fbbbe3b09f04e023dbbf21adcf5728db1928933a3f48de9dff",
+    "script/check_publication_gates.py": "be7599ce5f448d810956e32dc80bf1b402712bd2bd6e7345d11e9a406af1f886",
+    "script/generate_open_source_manifest.py": "b8ee5ca0e44ba7381b7fea3c17676541ec0b123dbc21c3d0644b9924e39ed93e",
+    "script/generate_sbom.py": "c9400c8a64627d6a062446425c66f00948c19ed2f155f31a06db069ffe0d87fc",
+    "script/publication_evidence.py": "050bf3359498c587b5e43b135ad7ccbd84bda88f786ad54e86ee10c598a6dda8"
+  },
+  "evidence_scopes": {
+    "community_build": {
+      "identity": "unofficial",
+      "source": "Config/Community.example.env",
+      "status": "CONFIGURED"
+    },
+    "current_tree": {
+      "personal_path_documents": [
+        "docs/swiftui-polish-audit-2026-06-29.md"
+      ],
+      "personal_path_review_complete": false,
+      "status": "REVIEW_REQUIRED"
+    },
+    "external_manual_gates": {
+      "status": "BLOCKED",
+      "unresolved_count": 6
+    },
+    "reachable_history": {
+      "owner_exposure_decision": null,
+      "personal_path_exposure_detected": true,
+      "status": "OWNER_DECISION_REQUIRED"
+    }
+  },
+  "licensing": {
+    "approved_spdx_id": null,
+    "dco_adopted": false,
+    "proposed_spdx_id": "MPL-2.0",
+    "root_license_present": false
+  },
+  "publication": {
+    "blockers": [
+      {
+        "code": "CURRENT_TREE_PERSONAL_PATH_REVIEW_REQUIRED",
+        "detail": "Tracked historical audit documents still contain workstation-specific absolute paths and require cleanup or explicit acceptance.",
+        "gate": "owner",
+        "scope": "current_tree"
+      },
+      {
+        "code": "DCO_DECISION_REQUIRED",
+        "detail": "No contributor certificate policy has been adopted; an owner or legal decision is required.",
+        "gate": "legal",
+        "scope": "external_manual_gates"
+      },
+      {
+        "code": "FORMAL_SECURITY_SCAN_DEFERRED",
+        "detail": "The user explicitly deferred the formal Codex Security scan; publication must remain blocked until it is completed and reviewed.",
+        "gate": "security",
+        "scope": "external_manual_gates"
+      },
+      {
+        "code": "GOVERNANCE_APPROVAL_REQUIRED",
+        "detail": "No public governance and maintainer authority model has owner approval.",
+        "gate": "owner",
+        "scope": "external_manual_gates"
+      },
+      {
+        "code": "LICENSE_APPROVAL_REQUIRED",
+        "detail": "MPL-2.0 is a proposal only; no license has owner or legal approval.",
+        "gate": "legal",
+        "scope": "external_manual_gates"
+      },
+      {
+        "code": "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
+        "detail": "Reachable Git history contains workstation identity/path references; the owner must approve exposure or authorize a history rewrite.",
+        "gate": "owner",
+        "scope": "reachable_history"
+      },
+      {
+        "code": "ROOT_LICENSE_MISSING",
+        "detail": "The repository has no adopted root license file and therefore grants no open-source license.",
+        "gate": "legal",
+        "scope": "current_tree"
+      },
+      {
+        "code": "SECURITY_CONTACT_REQUIRED",
+        "detail": "No approved public security-reporting contact or intake channel is recorded.",
+        "gate": "owner",
+        "scope": "external_manual_gates"
+      },
+      {
+        "code": "TRADEMARK_DECISION_REQUIRED",
+        "detail": "Project naming and trademark permissions have not received owner or legal approval.",
+        "gate": "legal",
+        "scope": "external_manual_gates"
+      }
+    ],
+    "status": "BLOCKED"
+  },
+  "schema_version": 1,
+  "security": {
+    "credential_review": {
+      "conclusion": "NO_CONFIRMED_CREDENTIAL_IN_CURRENT_REACHABLE_HISTORY",
+      "formal_scan_coverage": false,
+      "method": "prior manual repository and reachable-history audit",
+      "scope": "current reachable history at the audit point"
+    },
+    "formal_codex_security_scan": {
+      "completed": false,
+      "status": "DEFERRED"
+    },
+    "security_contact": null
+  },
+  "toolchain": {
+    "swift_tools_version": "6.2"
+  },
+  "verification_commands": [
+    "python3 -m json.tool artifacts/sbom/snapaction.cdx.json",
+    "python3 -m json.tool docs/open-source/OPEN_SOURCE_MANIFEST.json",
+    "python3 -m unittest discover -s Tests/ToolingTests -v",
+    "python3 script/check_publication_gates.py",
+    "python3 script/generate_open_source_manifest.py",
+    "python3 script/generate_sbom.py",
+    "swift build",
+    "swift test"
+  ]
+}

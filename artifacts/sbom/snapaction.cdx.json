@@ -1,0 +1,266 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "apple-framework:AppKit",
+      "name": "AppKit",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:CoreGraphics",
+      "name": "CoreGraphics",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:EventKit",
+      "name": "EventKit",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:Foundation",
+      "name": "Foundation",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:FoundationModels",
+      "name": "FoundationModels",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:OSLog",
+      "name": "OSLog",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:Observation",
+      "name": "Observation",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:ScreenCaptureKit",
+      "name": "ScreenCaptureKit",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:SwiftUI",
+      "name": "SwiftUI",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "apple-framework:Vision",
+      "name": "Vision",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "provided-by-platform"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "false"
+        }
+      ],
+      "scope": "required",
+      "type": "framework"
+    },
+    {
+      "bom-ref": "internal:SnapActionApp",
+      "name": "SnapActionApp",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "internal-source-target"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "true"
+        }
+      ],
+      "scope": "required",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "internal:SnapActionCore",
+      "name": "SnapActionCore",
+      "properties": [
+        {
+          "name": "snapaction.relationship",
+          "value": "internal-source-target"
+        },
+        {
+          "name": "snapaction.redistributed",
+          "value": "true"
+        }
+      ],
+      "scope": "required",
+      "type": "library",
+      "version": "0.1.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "apple-framework:AppKit",
+        "apple-framework:CoreGraphics",
+        "apple-framework:EventKit",
+        "apple-framework:Foundation",
+        "apple-framework:FoundationModels",
+        "apple-framework:OSLog",
+        "apple-framework:Observation",
+        "apple-framework:ScreenCaptureKit",
+        "apple-framework:SwiftUI",
+        "apple-framework:Vision",
+        "internal:SnapActionCore"
+      ],
+      "ref": "internal:SnapActionApp"
+    },
+    {
+      "dependsOn": [
+        "apple-framework:Foundation"
+      ],
+      "ref": "internal:SnapActionCore"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "application:SnapAction",
+      "name": "SnapAction",
+      "properties": [
+        {
+          "name": "snapaction.build-system",
+          "value": "Swift Package Manager"
+        },
+        {
+          "name": "snapaction.platform",
+          "value": "macOS"
+        }
+      ],
+      "type": "application",
+      "version": "0.1.0"
+    },
+    "tools": {
+      "components": [
+        {
+          "bom-ref": "build-tool:Swift",
+          "name": "Swift",
+          "properties": [
+            {
+              "name": "snapaction.relationship",
+              "value": "build-tool"
+            }
+          ],
+          "type": "application",
+          "version": "6.2"
+        }
+      ]
+    }
+  },
+  "properties": [
+    {
+      "name": "snapaction.external-swift-package-count",
+      "value": "0"
+    }
+  ],
+  "serialNumber": "urn:uuid:6c6a1c9b-48fb-5fae-9009-7fe8165ab5b1",
+  "specVersion": "1.6",
+  "version": 1
+}

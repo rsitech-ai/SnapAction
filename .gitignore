@@ -6,6 +6,8 @@ dist/
 *.xcworkspace
 .DS_Store
 .artifacts/
+__pycache__/
+*.py[cod]
 .superpowers/
 .worktrees/
 docs/superpowers/plans/*.tmp
