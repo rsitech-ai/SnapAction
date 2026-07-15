@@ -29,28 +29,45 @@
     "redistributed_third_party_packages": []
   },
   "evidence_inputs": {
+    ".github/ISSUE_TEMPLATE/bug.yml": "e911072b4d6b2b16603e67a45b765eb1890e96f86d780948b13e796dc2636ad0",
+    ".github/ISSUE_TEMPLATE/config.yml": "8b09e7df09fc7534371988062769ee427af2954a02c04c763e8a8005be0f2be4",
+    ".github/ISSUE_TEMPLATE/feature.yml": "e6df811f810a3282bb83d696ac3e9279758e69eee7b7a1b17c269694825fbc3e",
+    ".github/dependabot.yml": "9211f882c87e73944a7f4435e119e9a6100cc5b94c446647cb20a027a7e976f5",
+    ".github/pull_request_template.md": "9baa1313281438312077c900b47b33e8c7b2f6e94af958f17356b6e224e32352",
+    ".github/workflows/ci.yml": "022e1bf88ce67462a5a213ead8438745d5ebc63071de46f388d6b39611fd70bb",
+    ".github/workflows/codeql.yml": "1c5330cbef2cf6e81c9c83082fb4b5b580acadb18e6ff3921d26a272bbde8dce",
+    ".github/workflows/dependency-review.yml": "39d1b0613962b693a6648c039b85d72b32f9da366f2c6f0695ee79b624a21bfb",
+    ".github/workflows/license-compliance.yml": "9f46ab3c2978d3218677b77e9204f7cc50b42dae1bfbb1fe586f3535b0a3ca12",
+    ".gitignore": "4e8dc24943aa8dc4f6d4127fe19ba9e1f4692d0da7c57141c9049af39573032b",
+    "CHANGELOG.md": "f689dada07579fd63d57f48bcdef27319e363e96d618749a015cbd72e843e80b",
+    "CONTRIBUTING.md": "8f242baf915c5423c30cf232f5c27ff18d52bd0b293c74922305bdc25e1bbd2e",
     "Config/Community.example.env": "5ae7f815276532fd07bee1ff4c71ed8264099895dddefd608841bef8f9182f3f",
     "Package.swift": "6fe9244ec0f9670240a6596d7738f118f534f8653941d4d704cd6b7ae5e0f395",
+    "README.md": "39688203458de6539df290a9b7d7679161f0b3cc4e6bf0b95769fe0e7f6f13fc",
+    "RELEASING.md": "2998783defcb74bcba515d6c11446116dffa76b49fd5fe7fb58570a5c38fe00b",
+    "ROADMAP.md": "bc699239f98db65238c2a8ca864a3596a6eae1d22ca7ec87813456ae79ad98c9",
+    "SUPPORT.md": "46985b14bf5e8634408bc92b62f17ff5b8b0fe6e1ab8041c0ea9060b06868229",
     "docs/community-build/README.md": "149d18961914a90ac03938179fe68c23c9f2220432d8adb7774fae752d3590fb",
-    "docs/open-source/BLOCKERS.md": "a006e76eec703fd38242a63f0820adac751ead0ff06b53c9850d72c246b4d328",
+    "docs/open-source/BLOCKERS.md": "bf825b063b011adae1f00568d6fd3054a6fe94c0e1e3b9d253c5bda1e51bc147",
     "docs/open-source/COMMUNITY_BUILD.md": "602249b783191bb29d01a2edd1de058e1d621e48771dbab10b3181435564258e",
     "docs/open-source/GOVERNANCE_REVIEW.md": "87633550ec15472c2ae0d0e5c08845f8b4e1268493e933e7837c60b9a32be6e7",
-    "docs/open-source/IP_INVENTORY.md": "cfbb95097c344a513d0780fad36be87d8e560a964cbb1014c4732ec414b880af",
+    "docs/open-source/IP_INVENTORY.md": "84e79c56c56b30bac4d4619483b442f48c91b5318216b7c2c7d99807a00545ba",
     "docs/open-source/LICENSE_MAP.md": "fbbbc7ab2d7f2ce54357e19e039aa34638df4ee928d2a2c9ce978a459fb61483",
     "docs/open-source/OPEN_SOURCE_STATUS.md": "3f73c2f9b3df7792739eda323c3dff8c1643f63b104cafb5eac9bad95b4d2278",
-    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "921e29d4cd28dce5b4b31c3b54055e812c1a93ea3a583de999cab7afc2ca872f",
-    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "d175ac07da4c9b83fe656c2f59dd57e84d22da0c1a02baea6b06cfd5137ff8c3",
+    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "a171673d165dba52c6f5dcc8e9e024dcac56493dd8ad9edba9b09df6ed44fb3b",
+    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "6cab6d4d38454e1d00246874675135c04f462c19a046d827e3bd327b0844c3f5",
     "docs/open-source/SECRET_AUDIT.md": "9d24c46426936f13bd58a87985d3b45e5450e32973d0c72b68e630719cd736b2",
-    "docs/open-source/SECURITY_READINESS.md": "e5d41d1b3b77f7759b10907f9415e2bcb451be06b7c9a6f19cffd0860b8c622e",
-    "docs/open-source/SUPPLY_CHAIN_READINESS.md": "ed36cd3a31c867bec110e5e98962d9c4f120b044a9ba0b4fbb2daca3d58380e2",
+    "docs/open-source/SECURITY_READINESS.md": "d59a843cb4fd101b484ddf90f1981db4dcaa1fb905097c999bbb46b770ffbddd",
+    "docs/open-source/SUPPLY_CHAIN_READINESS.md": "a2a3aecae67cf107ef595cb08f41971db211dce9392be9b25a6a17c296cd1cd9",
     "docs/open-source/THIRD_PARTY_INVENTORY.md": "e7548eb29730c2c75cb1cc68d15759d5d84d0d3f996f1868342b9fef727af05a",
     "docs/open-source/TRADEMARK_REVIEW.md": "463a2804ffe20277177cf51c066569036a0a77b6b0a41e6faa39b97fd87e2d26",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md": "b42d486b1127af1e81e3d02f9481c9a4c2c3a7e49a4c8b70e3f7ac41d9546eaf",
     "script/build_and_run.sh": "f725fab92f36c2fbbbe3b09f04e023dbbf21adcf5728db1928933a3f48de9dff",
     "script/check_publication_gates.py": "be7599ce5f448d810956e32dc80bf1b402712bd2bd6e7345d11e9a406af1f886",
+    "script/check_repository_policy.py": "c86acaafebd6aa839ef7d7348ac0d0413389ef40d9c88adda4ec0657aad3c28f",
     "script/generate_open_source_manifest.py": "b8ee5ca0e44ba7381b7fea3c17676541ec0b123dbc21c3d0644b9924e39ed93e",
     "script/generate_sbom.py": "b58957c46e27dfd79a90864731de270876d4cca55b996881d121ab3a90daa0f6",
-    "script/publication_evidence.py": "cf67fd0451cab038db3d3284e38da68b08f5c230c76930a5cbb47f947e350683"
+    "script/publication_evidence.py": "06818f6f143befb95f6a965c5051b6e3c5684a9c853656c71b203139a36032e1"
   },
   "evidence_scopes": {
     "community_build": {
@@ -59,11 +76,9 @@
       "status": "CONFIGURED"
     },
     "current_tree": {
-      "personal_path_documents": [
-        "docs/swiftui-polish-audit-2026-06-29.md"
-      ],
-      "personal_path_review_complete": false,
-      "status": "REVIEW_REQUIRED"
+      "personal_path_documents": [],
+      "personal_path_review_complete": true,
+      "status": "REVIEWED"
     },
     "external_manual_gates": {
       "status": "BLOCKED",
@@ -83,12 +98,6 @@
   },
   "publication": {
     "blockers": [
-      {
-        "code": "CURRENT_TREE_PERSONAL_PATH_REVIEW_REQUIRED",
-        "detail": "Tracked historical audit documents still contain workstation-specific absolute paths and require cleanup or explicit acceptance.",
-        "gate": "owner",
-        "scope": "current_tree"
-      },
       {
         "code": "DCO_DECISION_REQUIRED",
         "detail": "No contributor certificate policy has been adopted; an owner or legal decision is required.",
@@ -168,6 +177,7 @@
     "python3 -m json.tool docs/open-source/OPEN_SOURCE_MANIFEST.json",
     "python3 -m unittest discover -s Tests/ToolingTests -v",
     "python3 script/check_publication_gates.py",
+    "python3 script/check_repository_policy.py",
     "python3 script/generate_open_source_manifest.py",
     "python3 script/generate_sbom.py",
     "swift build",

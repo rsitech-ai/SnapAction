@@ -8,7 +8,7 @@
 | Governance | Owner | Blocked | Owner records maintainer, contribution, release, and enforcement authority. |
 | Security contact | Owner/security | Blocked | Owner approves a public reporting route and private intake owner. |
 | Formal Codex Security scan | Security | Deferred/blocking | Complete the explicitly deferred scan and review its findings. |
-| Current-tree personal paths | Current tree | Blocked | Remove workstation-specific paths or explicitly accept them. |
+| Current-tree personal paths | Current tree | Clear | Tracked text contains no workstation-specific absolute home-directory paths; keep the policy check green. |
 | Reachable-history exposure | Git history | Blocked | Approve disclosure or separately authorize a coordinated history rewrite. |
 | Community build identity | Community build | Configured | Keep the unofficial defaults and validate any override. |
 | External Swift dependencies | Current tree | Clear | `Package.swift` declares zero external packages; rerun the generator after dependency changes. |

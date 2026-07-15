@@ -51,14 +51,14 @@
 
 ## Observability
 
-- Logger subsystem: `com.s1kor.snapaction`.
+- Logger subsystem: derived from the running bundle identifier. The current unofficial community default is `org.example.snapaction.community`; the 2026-06-29 audit used an older local identity.
 - Categories: `Workflow`.
 - Key lifecycle/action events: app state initialization, capture requested, import requested, document processed, execution requested/finished, clipboard restored, recoverable errors.
 - Sensitive logging exclusions: no screenshot bytes, no raw OCR text, no clipboard text, no user payload contents.
 
 ## App Store Readiness
 
-- Bundle ID: local run bundle uses `com.s1kor.snapaction`.
+- Bundle ID: local community runs default to the neutral `org.example.snapaction.community`; validated developer overrides are supported. Official identity is not stored in the repository.
 - Signing team: not configured.
 - Sandbox/entitlements: not configured; required before App Store distribution.
 - Privacy manifest: not created.

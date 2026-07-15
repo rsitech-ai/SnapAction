@@ -5,7 +5,7 @@
 - Date: 2026-06-29
 - Auditor: Codex
 - Platform: macOS
-- Project: `/Users/s1kor/dev/andrzej/SnapAction`
+- Project: `<repository-root>`
 - Product: SwiftPM executable `SnapAction`, app bundle staged at `dist/SnapAction.app`
 - Configuration: Debug app-bundle smoke plus Release compile check
 - Readiness target: end-to-end SwiftUI polish audit beyond unit tests
@@ -15,7 +15,7 @@
 
 | Check | Command or Tool | Result | Evidence |
 | --- | --- | --- | --- |
-| HQ warmup | `/Users/s1kor/.codex/scripts/session-bootstrap.sh` | passed | mandatory docs and daily memory files present |
+| HQ warmup | `<Codex-HQ-root>/scripts/session-bootstrap.sh` | passed | mandatory docs and daily memory files present |
 | Project discovery | `swift package describe --type json` | verified | SwiftPM, macOS 26.0, products `SnapAction` and `SnapActionCore` |
 | Full tests | `swift test` | passed | 9 Swift Testing tests passed after fixes |
 | Debug build | `swift build` | passed | compile completed |
@@ -26,7 +26,7 @@
 | Demo extraction screenshot | `Command-Shift-2`, `screencapture` | verified after fixes | `/tmp/snapaction-audit-2026-06-29-demo-final.png` |
 | Settings screenshot | SnapAction menu `Settings...`, `screencapture` | verified | `/tmp/snapaction-audit-2026-06-29-settings-valid.png` |
 | Screen Recording denied path | SnapAction menu `Capture Screen`, `screencapture` | verified | `/tmp/snapaction-audit-2026-06-29-capture-final.png` |
-| Logs | `log show --last 5m --predicate 'subsystem == "com.s1kor.snapaction" OR process == "SnapAction"'` | reviewed | expected ScreenCaptureKit/TCC denial; user-facing UI uses recovery copy |
+| Logs | `log show --last 5m --predicate 'subsystem == "<historical-local-bundle-id>" OR process == "SnapAction"'` | reviewed | expected ScreenCaptureKit/TCC denial; user-facing UI uses recovery copy. Current community builds derive the subsystem from `org.example.snapaction.community` or a validated override. |
 | Restore Clipboard click | System Events button lookup and coordinate click | blocked | button lookup failed; coordinate click returned `-25200`; store-level tests pass |
 
 Apple references consulted for audit framing:

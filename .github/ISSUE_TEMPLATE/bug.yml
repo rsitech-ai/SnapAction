@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible, non-sensitive product defect
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report vulnerabilities in public issues. No approved private security-reporting channel exists yet; keep vulnerability details private until one is published.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the visible behavior without including private OCR, clipboard, account, or filesystem data.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest safe sequence that reproduces the issue.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: macOS version, Mac model, and community build revision.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed screenshots, OCR text, clipboard contents, file paths, credentials, and other private data.
+          required: true
+        - label: This report does not disclose a security vulnerability.
+          required: true
