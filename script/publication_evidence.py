@@ -124,11 +124,11 @@ def external_swift_packages() -> list[str]:
     return ["UNPARSED_EXTERNAL_PACKAGE"] * len(declarations)
 
 
-def swift_tools_version() -> str:
+def swiftpm_manifest_tools_version() -> str:
     first_line = (REPO_ROOT / "Package.swift").read_text(encoding="utf-8").splitlines()[0]
     match = re.fullmatch(r"// swift-tools-version:\s*([0-9]+(?:\.[0-9]+)*)", first_line)
     if not match:
-        raise ValueError("Package.swift does not declare a parseable Swift tools version")
+        raise ValueError("Package.swift does not declare a parseable SwiftPM manifest tools version")
     return match.group(1)
 
 
@@ -258,10 +258,15 @@ def build_manifest() -> dict[str, Any]:
         "schema_version": 1,
         "security": {
             "credential_review": {
-                "conclusion": "NO_CONFIRMED_CREDENTIAL_IN_CURRENT_REACHABLE_HISTORY",
+                "current_reachable_history_status": "NOT_FORMALLY_SCANNED",
+                "current_repository_status": "UNVERIFIED",
                 "formal_scan_coverage": False,
-                "method": "prior manual repository and reachable-history audit",
-                "scope": "current reachable history at the audit point",
+                "historical_observation": {
+                    "anchor_commit": "e1f7c0a3c555e941241f710b53bb61dc04e189c3",
+                    "conclusion": "NO_CONFIRMED_CREDENTIAL_AT_AUDITED_BASE",
+                    "method": "prior manual repository and reachable-history audit",
+                    "scope": "tree and history reachable from the anchored base at the audit point",
+                },
             },
             "formal_codex_security_scan": {
                 "completed": False,
@@ -269,8 +274,9 @@ def build_manifest() -> dict[str, Any]:
             },
             "security_contact": None,
         },
-        "toolchain": {
-            "swift_tools_version": swift_tools_version(),
+        "source_manifest": {
+            "meaning": "source-declared SwiftPM manifest compatibility requirement; not installed toolchain evidence",
+            "swiftpm_tools_version": swiftpm_manifest_tools_version(),
         },
         "verification_commands": sorted(
             [

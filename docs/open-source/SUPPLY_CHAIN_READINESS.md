@@ -1,6 +1,6 @@
 # Supply-chain readiness
 
-The repository declares zero external Swift packages. `artifacts/sbom/snapaction.cdx.json` is a deterministic CycloneDX 1.6 source-package SBOM covering the application, internal Swift targets, Swift build tool, and Apple system frameworks. Apple frameworks are marked platform-provided and not redistributed.
+The repository declares zero external Swift packages. `artifacts/sbom/snapaction.cdx.json` is a deterministic CycloneDX 1.6 source-package SBOM covering the application, internal Swift targets, the source-declared SwiftPM manifest compatibility version, and Apple system frameworks. Apple frameworks are marked platform-provided and not redistributed. The SwiftPM manifest version is not presented as evidence of an installed compiler or toolchain.
 
 Regenerate and verify evidence with:
 

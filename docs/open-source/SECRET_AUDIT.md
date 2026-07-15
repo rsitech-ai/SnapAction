@@ -1,6 +1,8 @@
 # Secret audit
 
-The prior manual current-tree and reachable-history review found **no confirmed credential in current reachable history**. That conclusion is intentionally narrower than “no secrets exist”: it is not formal Codex Security scan coverage, does not cover unavailable refs or external systems, and does not remove the need to rotate a credential if one is later validated.
+An earlier manual review anchored to base commit `e1f7c0a3c555e941241f710b53bb61dc04e189c3` found **no confirmed credential at that audited base** in its tree and history reachable at the time. This immutable historical observation is not a conclusion about the current branch or its current reachable history.
+
+The current repository status is **UNVERIFIED** and current reachable history is **NOT FORMALLY SCANNED**. The historical observation does not cover later commits, unavailable refs, or external systems and does not remove the need to rotate a credential if one is later validated.
 
 The formal Codex Security scan was explicitly deferred by the user. Publication remains blocked until that scan is completed and its findings are reviewed.
 

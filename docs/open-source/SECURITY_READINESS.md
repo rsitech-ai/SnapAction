@@ -8,7 +8,7 @@ Unresolved publication gates:
 
 - the formal Codex Security scan was explicitly deferred and is not complete;
 - no approved public security-reporting contact or private intake channel is recorded;
-- the prior manual credential review is not formal scan coverage;
+- the current repository is unverified and its current reachable history is not formally scanned; the prior manual observation is anchored only to `e1f7c0a3c555e941241f710b53bb61dc04e189c3` and is not current coverage;
 - current-tree and reachable-history identity/path exposure decisions remain open.
 
 Do not create a security contact, publish a security policy, or claim scan clearance without owner approval and evidence.

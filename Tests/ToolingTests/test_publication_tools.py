@@ -70,11 +70,30 @@ class PublicationToolTests(unittest.TestCase):
         self.assertEqual(manifest["dependencies"]["external_swift_package_count"], 0)
         self.assertEqual(manifest["security"]["formal_codex_security_scan"]["status"], "DEFERRED")
         self.assertFalse(manifest["security"]["formal_codex_security_scan"]["completed"])
+        credential_review = manifest["security"]["credential_review"]
+        self.assertEqual(credential_review["current_repository_status"], "UNVERIFIED")
         self.assertEqual(
-            manifest["security"]["credential_review"]["conclusion"],
-            "NO_CONFIRMED_CREDENTIAL_IN_CURRENT_REACHABLE_HISTORY",
+            credential_review["current_reachable_history_status"],
+            "NOT_FORMALLY_SCANNED",
         )
-        self.assertFalse(manifest["security"]["credential_review"]["formal_scan_coverage"])
+        self.assertFalse(credential_review["formal_scan_coverage"])
+        self.assertEqual(
+            credential_review["historical_observation"]["anchor_commit"],
+            "e1f7c0a3c555e941241f710b53bb61dc04e189c3",
+        )
+        self.assertEqual(
+            credential_review["historical_observation"]["conclusion"],
+            "NO_CONFIRMED_CREDENTIAL_AT_AUDITED_BASE",
+        )
+        self.assertNotIn("CURRENT", credential_review["historical_observation"]["conclusion"])
+        self.assertNotIn("toolchain", manifest)
+        self.assertEqual(
+            manifest["source_manifest"],
+            {
+                "swiftpm_tools_version": "6.2",
+                "meaning": "source-declared SwiftPM manifest compatibility requirement; not installed toolchain evidence",
+            },
+        )
         self.assertIn("current_tree", manifest["evidence_scopes"])
         self.assertIn("reachable_history", manifest["evidence_scopes"])
         self.assertIn("community_build", manifest["evidence_scopes"])
@@ -112,10 +131,14 @@ class PublicationToolTests(unittest.TestCase):
         )
         self.assertEqual(
             sbom["properties"],
-            [{"name": "snapaction.external-swift-package-count", "value": "0"}],
+            [
+                {"name": "snapaction.external-swift-package-count", "value": "0"},
+                {"name": "snapaction.swiftpm-manifest-tools-version", "value": "6.2"},
+            ],
         )
         self.assertFalse(any(component["bom-ref"].startswith("swift-package:") for component in sbom["components"]))
-        self.assertIn("Swift", json.dumps(sbom["metadata"]["tools"]))
+        self.assertNotIn("tools", sbom["metadata"])
+        self.assertNotIn("installed toolchain", json.dumps(sbom).lower())
 
     def test_gate_checker_fails_closed_with_precise_unresolved_blockers(self):
         result = self.run_tool(GATE_CHECKER, cwd=REPO_ROOT / "Sources")
