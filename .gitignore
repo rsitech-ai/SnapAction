@@ -11,3 +11,21 @@ __pycache__/
 .superpowers/
 .worktrees/
 docs/superpowers/plans/*.tmp
+
+# Local official-release identity and Apple signing credentials.
+Config/Official.local.env
+*.env
+*.local.env
+.env
+.env.*
+!Config/Community.example.env
+Signing/
+*.key
+*.pem
+*.p8
+*.p12
+*.pfx
+*.cer
+AuthKey_*.p8
+*.mobileprovision
+*.provisionprofile

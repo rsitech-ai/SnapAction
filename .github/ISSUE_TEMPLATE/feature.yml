@@ -1,0 +1,33 @@
+name: Feature proposal
+description: Suggest a non-sensitive product improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report vulnerabilities in public issues. No approved private security-reporting channel exists yet; keep vulnerability details private until one is published.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Explain the user problem without sharing private OCR, clipboard, account, or filesystem data.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the smallest useful outcome and any privacy or permission implications.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed private or identifying data from this proposal.
+          required: true
+        - label: This proposal does not disclose a security vulnerability.
+          required: true

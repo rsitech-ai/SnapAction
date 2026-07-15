@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MANIFEST_GENERATOR = REPO_ROOT / "script" / "generate_open_source_manifest.py"
 SBOM_GENERATOR = REPO_ROOT / "script" / "generate_sbom.py"
 GATE_CHECKER = REPO_ROOT / "script" / "check_publication_gates.py"
+POLICY_CHECKER = REPO_ROOT / "script" / "check_repository_policy.py"
 COMMITTED_MANIFEST = REPO_ROOT / "docs" / "open-source" / "OPEN_SOURCE_MANIFEST.json"
 COMMITTED_SBOM = REPO_ROOT / "artifacts" / "sbom" / "snapaction.cdx.json"
 
@@ -102,6 +103,7 @@ class PublicationToolTests(unittest.TestCase):
         self.assertEqual(list(manifest["evidence_inputs"]), sorted(manifest["evidence_inputs"]))
         for tooling_input in (
             "script/check_publication_gates.py",
+            "script/check_repository_policy.py",
             "script/generate_open_source_manifest.py",
             "script/generate_sbom.py",
             "script/publication_evidence.py",
@@ -153,7 +155,6 @@ class PublicationToolTests(unittest.TestCase):
             "GOVERNANCE_APPROVAL_REQUIRED",
             "SECURITY_CONTACT_REQUIRED",
             "FORMAL_SECURITY_SCAN_DEFERRED",
-            "CURRENT_TREE_PERSONAL_PATH_REVIEW_REQUIRED",
             "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
         }
         reported = {
@@ -190,6 +191,62 @@ class PublicationToolTests(unittest.TestCase):
     def test_committed_generated_files_match_fresh_generation(self):
         self.assertEqual(COMMITTED_MANIFEST.read_bytes(), self.generated_bytes(MANIFEST_GENERATOR, cwd="/"))
         self.assertEqual(COMMITTED_SBOM.read_bytes(), self.generated_bytes(SBOM_GENERATOR, cwd="/"))
+
+    def test_current_tree_contains_no_tracked_workstation_paths(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from publication_evidence import tracked_personal_path_documents
+        finally:
+            sys.path.pop(0)
+
+        self.assertEqual(tracked_personal_path_documents(), [])
+
+    def test_repository_policy_checker_passes_the_committed_public_safeguards(self):
+        result = self.run_tool(POLICY_CHECKER, cwd=REPO_ROOT / "Sources")
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "Repository policy: PASS\n")
+
+    def test_license_gate_requires_both_adopted_file_and_recorded_owner_approval(self):
+        result = self.run_tool(POLICY_CHECKER, "--license-gate", cwd="/")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("ROOT_LICENSE_MISSING", result.stdout)
+        self.assertIn("LICENSE_APPROVAL_REQUIRED", result.stdout)
+
+    def test_workflow_policy_rejects_unsafe_action_permissions_triggers_and_secrets(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import workflow_policy_issues
+        finally:
+            sys.path.pop(0)
+
+        unsafe_workflow = """
+name: unsafe
+on:
+  pull_request_target:
+permissions:
+  contents: write
+jobs:
+  unsafe:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: "attacker/action@main"
+      - run: echo "${{ secrets.APPLE_API_KEY }}"
+"""
+
+        issues = workflow_policy_issues(Path(".github/workflows/unsafe.yml"), unsafe_workflow)
+        issue_codes = {issue.code for issue in issues}
+        self.assertTrue(
+            {
+                "ACTION_NOT_PINNED",
+                "ACTION_REFERENCE_UNPARSEABLE",
+                "FORBIDDEN_PULL_REQUEST_TARGET",
+                "NON_READ_DEFAULT_PERMISSIONS",
+                "PULL_REQUEST_SECRET_REFERENCE",
+            }.issubset(issue_codes)
+        )
 
 
 if __name__ == "__main__":

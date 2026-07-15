@@ -179,12 +179,24 @@ def evidence_input_hashes() -> dict[str, str]:
         REPO_ROOT / "Config/Community.example.env",
         REPO_ROOT / "script/build_and_run.sh",
         REPO_ROOT / "script/check_publication_gates.py",
+        REPO_ROOT / "script/check_repository_policy.py",
         REPO_ROOT / "script/generate_open_source_manifest.py",
         REPO_ROOT / "script/generate_sbom.py",
         REPO_ROOT / "script/publication_evidence.py",
         REPO_ROOT / "docs/community-build/README.md",
         REPO_ROOT / "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md",
+        REPO_ROOT / ".gitignore",
+        REPO_ROOT / ".github/dependabot.yml",
+        REPO_ROOT / "CHANGELOG.md",
+        REPO_ROOT / "CONTRIBUTING.md",
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "RELEASING.md",
+        REPO_ROOT / "ROADMAP.md",
+        REPO_ROOT / "SUPPORT.md",
     ]
+    github_configuration = REPO_ROOT / ".github"
+    if github_configuration.exists():
+        paths.extend(path for path in github_configuration.rglob("*") if path.is_file())
     open_source_docs = REPO_ROOT / "docs/open-source"
     if open_source_docs.exists():
         paths.extend(path for path in open_source_docs.glob("*.md") if path.is_file())
@@ -284,6 +296,7 @@ def build_manifest() -> dict[str, Any]:
                 "python3 -m json.tool docs/open-source/OPEN_SOURCE_MANIFEST.json",
                 "python3 -m unittest discover -s Tests/ToolingTests -v",
                 "python3 script/check_publication_gates.py",
+                "python3 script/check_repository_policy.py",
                 "python3 script/generate_open_source_manifest.py",
                 "python3 script/generate_sbom.py",
                 "swift build",

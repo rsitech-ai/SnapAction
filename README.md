@@ -2,6 +2,10 @@
 
 SnapAction is a local-first macOS utility that turns screen or image OCR into a confirmed action: create a Reminder, create a Calendar event, or copy clean text/table output.
 
+## Publication Status
+
+This repository is **not yet licensed or approved for open-source publication**. MPL-2.0 is a proposal only; there is no adopted root license, contributor certificate, governance model, trademark decision, security contact, or completed formal security scan. External contributions are not yet accepted. See [open-source status](docs/open-source/OPEN_SOURCE_STATUS.md) and [publication blockers](docs/open-source/BLOCKERS.md).
+
 ## Requirements
 
 - macOS 26+
@@ -33,8 +37,8 @@ script/build_and_run.sh --verify
 - Suggested actions are capped to three candidates and must be reviewed before execution.
 - Reminders and Calendar writes use EventKit and request permission on first write.
 - Text/table extraction copies to the macOS pasteboard.
-- The last copied text/table payload is cached locally so it can be restored after closing, reopening, or restarting the app.
-- Local history stores OCR text, structured candidates, timestamps, and execution results. It does not store screenshot pixels.
+- The last copied text/table payload is cached locally for up to seven days so it can be restored after closing, reopening, or restarting the app. It can be cleared independently in Settings.
+- Local history stores only minimal action summaries: timestamp, action title and kind, and a bounded outcome. It does not persist OCR text, structured candidates, EventKit identifiers, or screenshot pixels. History expires according to the 1–90 day setting and can be cleared in Settings.
 
 ## Permission Notes
 
@@ -51,6 +55,25 @@ When a text/table action is confirmed, SnapAction saves the copied payload to:
 `~/Library/Application Support/SnapAction/clipboard.json`
 
 Use `Restore Clipboard` in the review surface to put the last saved payload back onto the macOS clipboard. The cache stores text only, never screenshot pixels.
+
+The clipboard cache expires after seven days and can be cleared from Settings without clearing action history. Its containing directory and file are restricted to the current user where supported.
+
+## Community Builds
+
+`script/build_and_run.sh` stages an unofficial `SnapAction Community` bundle with the neutral identifier `org.example.snapaction.community` unless a developer supplies validated overrides. See [community build configuration](docs/community-build/README.md). Official identity, signing credentials, Team IDs, and App Store credentials are not part of this repository.
+
+## Repository Checks
+
+```bash
+swift test
+swift build -c release
+bash script/test_build_configuration.sh
+python3 -m unittest discover -s Tests/ToolingTests -v
+python3 script/check_repository_policy.py
+python3 script/check_publication_gates.py # expected to exit 1 until owner/legal/security gates are resolved
+```
+
+The generated source manifest is at `docs/open-source/OPEN_SOURCE_MANIFEST.json`; the CycloneDX source SBOM is at `artifacts/sbom/snapaction.cdx.json`.
 
 ## Architecture
 

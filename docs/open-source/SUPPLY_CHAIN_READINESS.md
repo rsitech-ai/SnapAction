@@ -10,6 +10,7 @@ python3 script/generate_sbom.py
 python3 -m json.tool docs/open-source/OPEN_SOURCE_MANIFEST.json >/dev/null
 python3 -m json.tool artifacts/sbom/snapaction.cdx.json >/dev/null
 python3 -m unittest discover -s Tests/ToolingTests -v
+python3 script/check_repository_policy.py
 ```
 
 The SBOM proves only the repository-derived dependency inventory captured by the generator. It is not a notarization record, binary attestation, vulnerability scan, or legal conclusion.
