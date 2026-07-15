@@ -86,23 +86,16 @@ def build_sbom() -> dict:
                 "type": "application",
                 "version": application["version"],
             },
-            "tools": {
-                "components": [
-                    {
-                        "bom-ref": "build-tool:Swift",
-                        "name": "Swift",
-                        "properties": [property_value("snapaction.relationship", "build-tool")],
-                        "type": "application",
-                        "version": manifest["toolchain"]["swift_tools_version"],
-                    }
-                ]
-            },
         },
         "properties": [
             property_value(
                 "snapaction.external-swift-package-count",
                 str(manifest["dependencies"]["external_swift_package_count"]),
-            )
+            ),
+            property_value(
+                "snapaction.swiftpm-manifest-tools-version",
+                manifest["source_manifest"]["swiftpm_tools_version"],
+            ),
         ],
         "serialNumber": f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, 'snapaction-sbom:' + seed)}",
         "specVersion": "1.6",

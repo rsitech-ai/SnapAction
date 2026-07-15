@@ -236,31 +236,19 @@
       ],
       "type": "application",
       "version": "0.1.0"
-    },
-    "tools": {
-      "components": [
-        {
-          "bom-ref": "build-tool:Swift",
-          "name": "Swift",
-          "properties": [
-            {
-              "name": "snapaction.relationship",
-              "value": "build-tool"
-            }
-          ],
-          "type": "application",
-          "version": "6.2"
-        }
-      ]
     }
   },
   "properties": [
     {
       "name": "snapaction.external-swift-package-count",
       "value": "0"
+    },
+    {
+      "name": "snapaction.swiftpm-manifest-tools-version",
+      "value": "6.2"
     }
   ],
-  "serialNumber": "urn:uuid:6c6a1c9b-48fb-5fae-9009-7fe8165ab5b1",
+  "serialNumber": "urn:uuid:ff834a0f-d207-51dc-91ac-0feaf849713a",
   "specVersion": "1.6",
   "version": 1
 }
