@@ -4,14 +4,18 @@ struct WorkspaceView: View {
     let appState: AppState
 
     var body: some View {
-        Group {
-            switch appState.workspacePresentation.phase {
-            case .capture:
-                CaptureWorkspaceView(appState: appState)
-            case .processing:
-                ProcessingWorkspaceView(label: appState.processingLabel)
-            case .review:
-                ReviewWorkspaceView(appState: appState)
+        ZStack {
+            WarmSignalBackdrop()
+
+            Group {
+                switch appState.workspacePresentation.phase {
+                case .capture:
+                    CaptureWorkspaceView(appState: appState)
+                case .processing:
+                    ProcessingWorkspaceView(label: appState.processingLabel)
+                case .review:
+                    ReviewWorkspaceView(appState: appState)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -23,7 +27,7 @@ struct ProcessingWorkspaceView: View {
     let label: String
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SnapActionDesign.spacingM) {
             ProgressView()
                 .controlSize(.large)
                 .accessibilityLabel(label)

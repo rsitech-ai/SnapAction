@@ -30,7 +30,7 @@ struct ReviewWorkspaceView: View {
                 description: Text("The recognized text did not produce an action to review.")
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(24)
+            .padding(SnapActionDesign.spacingL)
         }
     }
 }
@@ -56,10 +56,10 @@ struct OCRPreviewView: View {
                     .font(.system(.body, design: .monospaced))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .padding(16)
+                    .padding(SnapActionDesign.spacingM)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .snapSurface(cornerRadius: SnapActionDesign.groupRadius)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(20)
@@ -135,7 +135,7 @@ struct ActionReviewView: View {
 
     @ViewBuilder
     private var fieldRows: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: SnapActionDesign.spacingS) {
             Text("Fields")
                 .font(.headline)
 
@@ -143,7 +143,7 @@ struct ActionReviewView: View {
                 Text("No structured fields")
                     .foregroundStyle(.secondary)
             } else {
-                Grid(alignment: .topLeading, horizontalSpacing: 18, verticalSpacing: 10) {
+                Grid(alignment: .topLeading, horizontalSpacing: 18, verticalSpacing: SnapActionDesign.spacingS) {
                     ForEach(candidate.fields.sorted(by: { $0.key.rawValue < $1.key.rawValue }), id: \.key) { field, value in
                         GridRow(alignment: .top) {
                             Text(field.reviewLabel)

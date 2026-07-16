@@ -4,8 +4,8 @@ struct CaptureWorkspaceView: View {
     let appState: AppState
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer(minLength: 24)
+        VStack(spacing: SnapActionDesign.spacingL) {
+            Spacer(minLength: SnapActionDesign.spacingL)
 
             VStack(spacing: 14) {
                 Image(systemName: "viewfinder")
@@ -51,7 +51,7 @@ struct CaptureWorkspaceView: View {
             contextualRecovery
                 .frame(maxWidth: 560)
 
-            Spacer(minLength: 24)
+            Spacer(minLength: SnapActionDesign.spacingL)
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -64,7 +64,7 @@ struct CaptureWorkspaceView: View {
         VStack(spacing: 12) {
             if presentation.showsCapturePermissionRecovery {
                 GroupBox {
-                    HStack(spacing: 10) {
+                    HStack(spacing: SnapActionDesign.spacingS) {
                         Button("Request Access", action: appState.requestScreenRecordingPermission)
                             .help("Request Screen Recording access")
 
