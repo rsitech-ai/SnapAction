@@ -43,6 +43,17 @@ public extension ValidationState {
     }
 }
 
+public extension ActionExecutionResult {
+    var displayTone: DisplayTone {
+        switch self {
+        case .createdReminder, .createdEvent, .copiedToClipboard:
+            .success
+        case .failed:
+            .danger
+        }
+    }
+}
+
 public enum WorkspacePhase: Equatable, Sendable {
     case capture
     case processing

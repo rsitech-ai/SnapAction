@@ -37,6 +37,16 @@ import Testing
     #expect(invalidCandidate.validationState.displayTone == .danger)
 }
 
+@Test func successfulExecutionResultsUseSuccessTone() {
+    #expect(ActionExecutionResult.createdReminder(id: "reminder-1").displayTone == .success)
+    #expect(ActionExecutionResult.createdEvent(id: "event-1").displayTone == .success)
+    #expect(ActionExecutionResult.copiedToClipboard.displayTone == .success)
+}
+
+@Test func failedExecutionResultUsesDangerTone() {
+    #expect(ActionExecutionResult.failed(message: "Permission denied").displayTone == .danger)
+}
+
 @Test func workspacePhasePrioritizesProcessingThenReviewThenCapture() {
     #expect(WorkspacePhase.resolve(isProcessing: true, hasDocument: true) == .processing)
     #expect(WorkspacePhase.resolve(isProcessing: false, hasDocument: true) == .review)

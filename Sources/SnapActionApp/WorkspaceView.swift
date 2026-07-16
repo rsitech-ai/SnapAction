@@ -11,7 +11,7 @@ struct WorkspaceView: View {
             case .processing:
                 ProcessingWorkspaceView(label: appState.processingLabel)
             case .review:
-                DetailView(appState: appState)
+                ReviewWorkspaceView(appState: appState)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
