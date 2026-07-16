@@ -119,6 +119,10 @@ struct ActionReviewView: View {
         }
     }
 
+    private var reviewedCandidate: ActionCandidate {
+        CandidateReview.validated(candidate, editedTitle: editedTitle)
+    }
+
     private var candidateHeader: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Label(candidate.kind.displayName, systemImage: candidate.kind.symbolName)
@@ -171,9 +175,9 @@ struct ActionReviewView: View {
                     .textSelection(.enabled)
             }
 
-            Label(candidate.validationState.message, systemImage: candidate.validationState.symbolName)
+            Label(reviewedCandidate.validationState.message, systemImage: reviewedCandidate.validationState.symbolName)
                 .font(.callout)
-                .foregroundStyle(candidate.validationState.displayTone.color)
+                .foregroundStyle(reviewedCandidate.validationState.displayTone.color)
 
             Button {
                 appState.execute(candidate: candidate, editedTitle: editedTitle, confirmed: true)
@@ -182,10 +186,10 @@ struct ActionReviewView: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.glassProminent)
-            .disabled(!candidate.isExecutable)
+            .disabled(!reviewedCandidate.isExecutable)
             .accessibilityLabel(candidate.kind.confirmLabel)
-            .accessibilityHint(candidate.isExecutable ? "Executes the reviewed action" : candidate.validationState.message)
-            .help(candidate.isExecutable ? candidate.kind.confirmLabel : candidate.validationState.message)
+            .accessibilityHint(reviewedCandidate.isExecutable ? "Executes the reviewed action" : reviewedCandidate.validationState.message)
+            .help(reviewedCandidate.isExecutable ? candidate.kind.confirmLabel : reviewedCandidate.validationState.message)
         }
     }
 

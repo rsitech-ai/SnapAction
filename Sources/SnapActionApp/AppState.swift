@@ -208,8 +208,19 @@ final class AppState {
         guard processingStage.allowsNewOperation, let document = currentDocument else { return }
         lastExecutionFeedback = nil
         logger.info("Action execution requested kind=\(candidate.kind.rawValue, privacy: .public) confirmed=\(confirmed, privacy: .public)")
-        var candidateToExecute = candidate
-        candidateToExecute.title = editedTitle
+        let candidateToExecute = CandidateReview.validated(candidate, editedTitle: editedTitle)
+        guard candidateToExecute.isExecutable else {
+            let result = ActionExecutionResult.failed(
+                message: CandidateReview.validationMessage(for: candidateToExecute)
+            )
+            storeExecutionFeedback(result, for: candidate.id, document: document)
+            statusMessage = result.displayMessage
+            logger.warning("Action execution blocked by edited candidate validation")
+            return
+        }
+        if let candidateIndex = candidates.firstIndex(where: { $0.id == candidate.id }) {
+            candidates[candidateIndex] = candidateToExecute
+        }
         let session = CaptureSession(document: document, candidates: candidates)
 
         processingStage = confirmed ? .executingAction : .checkingConfirmation
