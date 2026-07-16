@@ -464,7 +464,7 @@ Render fields as aligned label/value rows without one card per field. Show valid
 
 - [ ] **Step 4: Keep clipboard and execution feedback contextual**
 
-Show Restore Clipboard only when a snapshot exists. Show `statusMessage` near the confirmation area after an execution attempt, with success/warning/error tone derived from actual result state; never infer success from button activation.
+Show Restore Clipboard only when a snapshot exists. Show candidate-bound typed execution feedback near the confirmation area after an execution attempt, with success/warning/error tone derived from the actual `ActionExecutionResult`; never infer success from button activation. Announce the result through `AccessibilityNotification.Announcement` for assistive technologies.
 
 - [ ] **Step 5: Use an adjustable native split**
 

@@ -4,6 +4,17 @@ import Testing
 @testable import SnapActionApp
 
 @Test
+func executionFeedbackUsesTheVisibleResultAsItsAccessibilityAnnouncement() {
+    let candidateID = UUID()
+    let feedback = CandidateExecutionFeedback(
+        candidateID: candidateID,
+        result: .copiedToClipboard
+    )
+
+    #expect(feedback.accessibilityAnnouncement == "Copied to clipboard")
+}
+
+@Test
 @MainActor
 func completedExecutionDoesNotExposeFeedbackUnderAnotherCandidate() async throws {
     let directory = FileManager.default.temporaryDirectory

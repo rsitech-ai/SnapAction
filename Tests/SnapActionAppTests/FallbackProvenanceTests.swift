@@ -119,6 +119,40 @@ func failedReplacementPreservesStaleFallbackProvenanceAndDisclosure() async thro
     #expect(appState.modelStatus == "Deterministic fallback active — Apple Intelligence extraction failed.")
 }
 
+@Test
+@MainActor
+func zeroCandidateFallbackStillPresentsItsReason() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SnapActionEmptyFallbackTests-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let historyStore = try HistoryStore(fileURL: directory.appendingPathComponent("history.json"))
+    let clipboardStore = try ClipboardSnapshotStore(fileURL: directory.appendingPathComponent("clipboard.json"))
+    let workflow = CaptureWorkflow(
+        extractor: EmptyFallbackProvenanceExtractor(),
+        validator: ActionValidator(),
+        executor: ProvenanceTestExecutor(),
+        historyStore: historyStore
+    )
+    let appState = AppState(
+        workflow: workflow,
+        historyStore: historyStore,
+        clipboardStore: clipboardStore,
+        modelAvailabilitySummary: { "Apple Intelligence available" },
+        modelIsAvailable: { true }
+    )
+
+    appState.captureDemo()
+    while appState.isProcessing { await Task.yield() }
+
+    #expect(appState.currentDocument != nil)
+    #expect(appState.candidates.isEmpty)
+    #expect(appState.activeExtractionProvenance == .deterministicFallback(.modelTimedOut))
+    #expect(appState.modelFallbackActive)
+    #expect(appState.workspacePresentation.showsModelFallbackNotice)
+    #expect(appState.modelFallbackNotice == "Deterministic fallback active — Apple Intelligence timed out.")
+}
+
 private actor SequencedProvenanceExtractor: ActionExtracting {
     private var callCount = 0
     private var secondResultContinuation: CheckedContinuation<[ActionCandidate], Never>?
@@ -191,6 +225,19 @@ private actor FallbackThenThrowExtractor: ActionExtracting {
                 extractionProvenance: .deterministicFallback(.modelFailed)
             )
         ]
+    }
+}
+
+private struct EmptyFallbackProvenanceExtractor: ActionExtracting {
+    func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
+        []
+    }
+
+    func extractResult(from request: ActionExtractionRequest) async throws -> ActionExtractionResult {
+        ActionExtractionResult(
+            candidates: [],
+            provenance: .deterministicFallback(.modelTimedOut)
+        )
     }
 }
 

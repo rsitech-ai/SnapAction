@@ -102,7 +102,7 @@ public struct HistoryStore: Sendable {
         let startOfToday = calendar.startOfDay(for: now())
         guard let cutoff = calendar.date(
             byAdding: .day,
-            value: -retentionPreferences.days,
+            value: 1 - retentionPreferences.days,
             to: startOfToday
         ) else {
             return entries

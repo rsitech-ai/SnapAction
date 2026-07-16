@@ -17,8 +17,28 @@ public enum ModelAvailability: Equatable, Sendable {
     case unavailable(String)
 }
 
+public struct ActionExtractionResult: Equatable, Sendable {
+    public var candidates: [ActionCandidate]
+    public var provenance: ExtractionProvenance?
+
+    public init(
+        candidates: [ActionCandidate],
+        provenance: ExtractionProvenance? = nil
+    ) {
+        self.candidates = candidates
+        self.provenance = provenance ?? candidates.compactMap(\.extractionProvenance).first
+    }
+}
+
 public protocol ActionExtracting: Sendable {
     func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate]
+    func extractResult(from request: ActionExtractionRequest) async throws -> ActionExtractionResult
+}
+
+public extension ActionExtracting {
+    func extractResult(from request: ActionExtractionRequest) async throws -> ActionExtractionResult {
+        ActionExtractionResult(candidates: try await extractCandidates(from: request))
+    }
 }
 
 public struct FoundationActionExtractor: ActionExtracting {

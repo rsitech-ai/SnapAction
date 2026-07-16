@@ -349,7 +349,7 @@ final class AppState {
             currentDocument = session.document
             candidates = session.candidates
             workflowFailure = nil
-            activeExtractionProvenance = session.candidates.compactMap(\.extractionProvenance).first
+            activeExtractionProvenance = session.extractionProvenance
             selectedCandidateID = session.candidates.first?.id
             refreshPermissionStatus()
             logger.info("Document processed blocks=\(document.blocks.count, privacy: .public) candidates=\(session.candidates.count, privacy: .public)")
@@ -392,6 +392,10 @@ final class AppState {
 struct CandidateExecutionFeedback: Equatable, Sendable {
     let candidateID: ActionCandidate.ID
     let result: ActionExecutionResult
+
+    var accessibilityAnnouncement: String {
+        result.displayMessage
+    }
 }
 
 enum ApplicationPaths {

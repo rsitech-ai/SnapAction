@@ -6,14 +6,25 @@ import Testing
 func historyLoadPrunesEntriesOlderThanTheCalendarDayCutoff() throws {
     let fixture = try RetentionFixture(defaultDays: 30)
     defer { fixture.remove() }
-    let recent = fixture.entry(daysAgo: 30, hour: 8, title: "Cutoff day")
-    let expired = fixture.entry(daysAgo: 31, hour: 23, title: "Expired")
+    let recent = fixture.entry(daysAgo: 29, hour: 8, title: "Oldest retained day")
+    let expired = fixture.entry(daysAgo: 30, hour: 23, title: "Expired")
     try fixture.writeRaw([recent, expired])
 
     let loaded = try fixture.store.load()
 
-    #expect(loaded.map(\.ocrText) == ["Cutoff day"])
-    #expect(try fixture.decodeRaw().map(\.ocrText) == ["Cutoff day"])
+    #expect(loaded.map(\.ocrText) == ["Oldest retained day"])
+    #expect(try fixture.decodeRaw().map(\.ocrText) == ["Oldest retained day"])
+}
+
+@Test
+func oneDayRetentionKeepsOnlyTheCurrentCalendarDate() throws {
+    let fixture = try RetentionFixture(defaultDays: 1)
+    defer { fixture.remove() }
+    let today = fixture.entry(daysAgo: 0, hour: 0, title: "Today")
+    let yesterday = fixture.entry(daysAgo: 1, hour: 23, title: "Yesterday")
+    try fixture.writeRaw([today, yesterday])
+
+    #expect(try fixture.store.load().map(\.ocrText) == ["Today"])
 }
 
 @Test

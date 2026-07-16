@@ -52,6 +52,10 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
     }
 
     func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
+        try await extractResult(from: request).candidates
+    }
+
+    func extractResult(from request: ActionExtractionRequest) async throws -> ActionExtractionResult {
         #if canImport(FoundationModels)
         switch SystemLanguageModel.default.availability {
         case .available:
@@ -66,7 +70,10 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
             switch outcome {
             case .success(let candidates):
                 if !candidates.isEmpty {
-                    return candidates
+                    return ActionExtractionResult(
+                        candidates: candidates,
+                        provenance: .foundationModels
+                    )
                 }
             case .failure:
                 return try await deterministicFallback(
@@ -95,17 +102,20 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
                 warning: "Apple Intelligence returned no actions; using deterministic text extraction."
             )
         case .unavailable(let reason):
-            return [
-                ActionCandidate(
-                    kind: .textTable,
-                    title: "Extract text",
-                    confidence: 1,
-                    sourceText: request.document.normalizedText,
-                    fields: [.extractedText: request.document.normalizedText],
-                    validationState: .warning("Apple Intelligence unavailable: \(reason)"),
-                    extractionProvenance: .deterministicFallback(.modelUnavailable)
-                )
-            ]
+            return ActionExtractionResult(
+                candidates: [
+                    ActionCandidate(
+                        kind: .textTable,
+                        title: "Extract text",
+                        confidence: 1,
+                        sourceText: request.document.normalizedText,
+                        fields: [.extractedText: request.document.normalizedText],
+                        validationState: .warning("Apple Intelligence unavailable: \(reason)"),
+                        extractionProvenance: .deterministicFallback(.modelUnavailable)
+                    )
+                ],
+                provenance: .deterministicFallback(.modelUnavailable)
+            )
         @unknown default:
             break
         }
@@ -203,13 +213,17 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         from request: ActionExtractionRequest,
         reason: DeterministicFallbackReason,
         warning: String
-    ) async throws -> [ActionCandidate] {
-        try await fallback.extractCandidates(from: request).map { candidate in
+    ) async throws -> ActionExtractionResult {
+        let candidates = try await fallback.extractCandidates(from: request).map { candidate in
             var copy = candidate
             copy.validationState = .warning(warning)
             copy.extractionProvenance = .deterministicFallback(reason)
             return copy
         }
+        return ActionExtractionResult(
+            candidates: candidates,
+            provenance: .deterministicFallback(reason)
+        )
     }
 }
 

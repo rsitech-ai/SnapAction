@@ -141,6 +141,11 @@ struct ActionReviewView: View {
                 clipboardRestore
             }
         }
+        .onChange(of: appState.lastExecutionFeedback, initial: true) { _, feedback in
+            guard feedback?.candidateID == candidate.id,
+                  let announcement = feedback?.accessibilityAnnouncement else { return }
+            AccessibilityNotification.Announcement(announcement).post()
+        }
     }
 
     private var reviewedCandidate: ActionCandidate {
