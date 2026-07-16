@@ -42,7 +42,7 @@ final class AppState {
     private var screenCaptureAllowed = false
     var eventKitStatus = "Calendar and Reminders permissions are requested on first write."
     var clipboardStatus = "No saved clipboard yet"
-    var historyRetentionDays = 30
+    private(set) var historyRetentionDays = 30
     var hotkeyDescription = "Command-Shift-1 capture, Command-Shift-2 demo, Command-Shift-I import"
     var historySearchText = ""
 
@@ -73,6 +73,7 @@ final class AppState {
         self.hotkeyService = hotkeyService
         self.modelAvailabilitySummary = modelAvailabilitySummary
         self.modelIsAvailable = modelIsAvailable
+        self.historyRetentionDays = historyStore.retentionDays
         refreshHistory()
         refreshClipboardSnapshot()
         refreshPermissionStatus()
@@ -291,6 +292,20 @@ final class AppState {
     func openSystemSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    func updateHistoryRetentionDays(_ days: Int) {
+        do {
+            try historyStore.setRetentionDays(days)
+            historyRetentionDays = historyStore.retentionDays
+            refreshHistory()
+            let unit = historyRetentionDays == 1 ? "day" : "days"
+            statusMessage = "History retention updated to \(historyRetentionDays) \(unit)."
+        } catch {
+            historyRetentionDays = historyStore.retentionDays
+            statusMessage = "Could not update history retention: \(error.localizedDescription)"
+            logger.error("History retention update failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

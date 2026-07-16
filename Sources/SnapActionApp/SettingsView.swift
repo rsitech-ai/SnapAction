@@ -46,7 +46,12 @@ struct SettingsView: View {
             }
 
             Section("History") {
-                Stepper(value: Bindable(appState).historyRetentionDays, in: 1...90) {
+                Stepper(value: Binding<Int>(
+                    get: { appState.historyRetentionDays },
+                    set: { newValue in
+                        appState.updateHistoryRetentionDays(newValue)
+                    }
+                ), in: 1...90) {
                     Text(HistoryRetentionPresentation.label(days: appState.historyRetentionDays))
                 }
                 Text("History stores OCR text, candidates, timestamps, and execution results. Screenshot pixels are not stored.")
