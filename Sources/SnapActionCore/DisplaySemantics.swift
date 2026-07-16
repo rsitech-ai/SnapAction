@@ -136,6 +136,77 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var showsClipboardRestore: Bool { hasClipboardSnapshot }
     public var showsCapturePermissionRecovery: Bool { !screenCaptureAllowed }
     public var showsModelFallbackNotice: Bool { modelFallbackActive }
+    public var showsModelStatusInSidebar: Bool { modelFallbackActive }
+}
+
+public enum WorkflowFailureKind: String, Codable, Equatable, Sendable {
+    case capturePermission
+    case capture
+    case imageImport
+    case extraction
+}
+
+public enum WorkflowFailureRetryAction: String, Codable, Equatable, Sendable {
+    case capture
+    case imageImport
+}
+
+public enum WorkflowFailurePresentation: Equatable, Sendable {
+    case capturePermission(String)
+    case capture(String)
+    case imageImport(String)
+    case extraction(String)
+
+    public var kind: WorkflowFailureKind {
+        switch self {
+        case .capturePermission:
+            .capturePermission
+        case .capture:
+            .capture
+        case .imageImport:
+            .imageImport
+        case .extraction:
+            .extraction
+        }
+    }
+
+    public var title: String {
+        switch self {
+        case .capturePermission:
+            "Screen Recording needed"
+        case .capture:
+            "Capture failed"
+        case .imageImport:
+            "Image couldn’t be read"
+        case .extraction:
+            "Actions couldn’t be created"
+        }
+    }
+
+    public var detail: String {
+        switch self {
+        case .capturePermission(let detail),
+             .capture(let detail),
+             .imageImport(let detail),
+             .extraction(let detail):
+            detail
+        }
+    }
+
+    public var showsCapturePermissionRecovery: Bool {
+        kind == .capturePermission
+    }
+
+    public var retryAction: WorkflowFailureRetryAction? {
+        switch self {
+        case .capture:
+            .capture
+        case .imageImport:
+            .imageImport
+        case .capturePermission, .extraction:
+            nil
+        }
+    }
 }
 
 public enum HistoryEmptyState: Sendable {
@@ -146,6 +217,6 @@ public enum HistoryEmptyState: Sendable {
 
 public enum HistoryRetentionPresentation: Sendable {
     public static func label(days: Int) -> String {
-        "Retain metadata for \(days) \(days == 1 ? "day" : "days")"
+        "Retain history for \(days) \(days == 1 ? "day" : "days")"
     }
 }

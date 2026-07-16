@@ -86,9 +86,38 @@ import Testing
     #expect(!healthy.showsClipboardRestore)
     #expect(!healthy.showsCapturePermissionRecovery)
     #expect(!healthy.showsModelFallbackNotice)
+    #expect(!healthy.showsModelStatusInSidebar)
     #expect(blocked.showsClipboardRestore)
     #expect(blocked.showsCapturePermissionRecovery)
     #expect(blocked.showsModelFallbackNotice)
+    #expect(blocked.showsModelStatusInSidebar)
+}
+
+@Test func workflowFailuresExposeDistinctTruthfulPresentation() {
+    let permission = WorkflowFailurePresentation.capturePermission("Screen Recording is denied.")
+    let capture = WorkflowFailurePresentation.capture("The display could not be captured.")
+    let image = WorkflowFailurePresentation.imageImport("The selected image is invalid.")
+    let extraction = WorkflowFailurePresentation.extraction("The model response was invalid.")
+
+    #expect(permission.kind == .capturePermission)
+    #expect(permission.title == "Screen Recording needed")
+    #expect(permission.showsCapturePermissionRecovery)
+    #expect(permission.retryAction == nil)
+
+    #expect(capture.kind == .capture)
+    #expect(capture.title == "Capture failed")
+    #expect(!capture.showsCapturePermissionRecovery)
+    #expect(capture.retryAction == .capture)
+
+    #expect(image.kind == .imageImport)
+    #expect(image.title == "Image couldn’t be read")
+    #expect(!image.showsCapturePermissionRecovery)
+    #expect(image.retryAction == .imageImport)
+
+    #expect(extraction.kind == .extraction)
+    #expect(extraction.title == "Actions couldn’t be created")
+    #expect(!extraction.showsCapturePermissionRecovery)
+    #expect(extraction.retryAction == nil)
 }
 
 @Test func historyEmptyStateDistinguishesNoMatchesFromNoStoredHistory() {
@@ -97,6 +126,6 @@ import Testing
 }
 
 @Test func historyRetentionLabelUsesSingularAndPluralDayUnits() {
-    #expect(HistoryRetentionPresentation.label(days: 1) == "Retain metadata for 1 day")
-    #expect(HistoryRetentionPresentation.label(days: 30) == "Retain metadata for 30 days")
+    #expect(HistoryRetentionPresentation.label(days: 1) == "Retain history for 1 day")
+    #expect(HistoryRetentionPresentation.label(days: 30) == "Retain history for 30 days")
 }

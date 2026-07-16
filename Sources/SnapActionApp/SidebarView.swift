@@ -8,7 +8,9 @@ struct SidebarView: View {
         @Bindable var appState = appState
 
         List(selection: $appState.selectedCandidateID) {
-            modelSection
+            if appState.workspacePresentation.showsModelStatusInSidebar {
+                modelSection
+            }
             suggestionsSection
             historySection
         }

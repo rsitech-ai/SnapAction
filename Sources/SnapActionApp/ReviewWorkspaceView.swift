@@ -18,20 +18,44 @@ struct ReviewWorkspaceView: View {
     private var actionPane: some View {
         if let candidate = appState.selectedCandidate {
             ScrollView {
-                ActionReviewView(appState: appState, candidate: candidate)
-                    .id(candidate.id)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .padding(20)
+                VStack(alignment: .leading, spacing: 20) {
+                    if let failure = appState.workflowFailure {
+                        workflowFailureBanner(failure)
+                    }
+
+                    ActionReviewView(appState: appState, candidate: candidate)
+                        .id(candidate.id)
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
+                .padding(20)
             }
         } else {
-            ContentUnavailableView(
-                "No Suggested Actions",
-                systemImage: "text.badge.xmark",
-                description: Text("The recognized text did not produce an action to review.")
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(SnapActionDesign.spacingL)
+            VStack(spacing: 0) {
+                if let failure = appState.workflowFailure {
+                    workflowFailureBanner(failure)
+                        .padding(20)
+                }
+
+                ContentUnavailableView(
+                    "No Suggested Actions",
+                    systemImage: "text.badge.xmark",
+                    description: Text("The recognized text did not produce an action to review.")
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(SnapActionDesign.spacingL)
+            }
         }
+    }
+
+    private func workflowFailureBanner(_ failure: WorkflowFailurePresentation) -> some View {
+        WorkflowFailureBanner(
+            failure: failure,
+            retry: appState.retryWorkflowFailure,
+            requestScreenRecordingAccess: appState.requestScreenRecordingPermission,
+            openPrivacySettings: appState.openSystemSettings,
+            dismiss: appState.dismissWorkflowFailure
+        )
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

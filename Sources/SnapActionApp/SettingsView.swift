@@ -54,6 +54,20 @@ struct SettingsView: View {
                 ), in: 1...90) {
                     Text(HistoryRetentionPresentation.label(days: appState.historyRetentionDays))
                 }
+                if let errorMessage = appState.settingsErrorMessage {
+                    HStack(alignment: .firstTextBaseline, spacing: SnapActionDesign.spacingS) {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                            .font(.callout)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Spacer(minLength: 0)
+
+                        Button("Dismiss", action: appState.dismissSettingsError)
+                            .controlSize(.small)
+                            .help("Dismiss the history settings error")
+                    }
+                }
                 Text("History stores OCR text, candidates, timestamps, and execution results. Screenshot pixels are not stored.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

@@ -33,7 +33,8 @@ final class AppState {
     var history: [HistoryEntry] = []
     var lastClipboardSnapshot: ClipboardSnapshot?
     private(set) var lastExecutionFeedback: CandidateExecutionFeedback?
-    var statusMessage = "Ready"
+    private(set) var workflowFailure: WorkflowFailurePresentation?
+    private(set) var settingsErrorMessage: String?
     private(set) var processingStage: ProcessingStage = .idle
     var modelStatus = "Checking Apple Intelligence..."
     var screenCaptureStatus = "Checking Screen Recording..."
@@ -54,6 +55,7 @@ final class AppState {
     private let hotkeyService: GlobalHotkeyService
     private let modelAvailabilitySummary: @Sendable () -> String
     private let modelIsAvailable: @Sendable () -> Bool
+    private let historyRetentionUpdater: @Sendable (Int) throws -> Void
 
     init(
         workflow: CaptureWorkflow,
@@ -63,7 +65,8 @@ final class AppState {
         screenCaptureService: ScreenCaptureService = ScreenCaptureService(),
         hotkeyService: GlobalHotkeyService = GlobalHotkeyService(),
         modelAvailabilitySummary: @escaping @Sendable () -> String = LocalFoundationModelsExtractor.availabilitySummary,
-        modelIsAvailable: @escaping @Sendable () -> Bool = { LocalFoundationModelsExtractor.isAvailable }
+        modelIsAvailable: @escaping @Sendable () -> Bool = { LocalFoundationModelsExtractor.isAvailable },
+        historyRetentionUpdater: (@Sendable (Int) throws -> Void)? = nil
     ) {
         self.workflow = workflow
         self.historyStore = historyStore
@@ -73,6 +76,9 @@ final class AppState {
         self.hotkeyService = hotkeyService
         self.modelAvailabilitySummary = modelAvailabilitySummary
         self.modelIsAvailable = modelIsAvailable
+        self.historyRetentionUpdater = historyRetentionUpdater ?? { days in
+            try historyStore.setRetentionDays(days)
+        }
         self.historyRetentionDays = historyStore.retentionDays
         refreshHistory()
         refreshClipboardSnapshot()
@@ -190,9 +196,18 @@ final class AppState {
                 processingStage = .findingActions
                 await resolveActions(in: document)
             } catch {
-                logger.error("Screen capture failed: \(error.localizedDescription, privacy: .public)")
-                statusMessage = "Screen Recording permission needed. Open Settings to continue."
                 refreshPermissionStatus()
+                if screenCaptureAllowed {
+                    logger.error("Screen capture workflow failed")
+                    workflowFailure = .capture(
+                        "SnapAction couldn’t capture and read the display. Try again."
+                    )
+                } else {
+                    logger.error("Screen capture blocked by Screen Recording access")
+                    workflowFailure = .capturePermission(
+                        "Allow Screen Recording access to capture the display."
+                    )
+                }
             }
         }
     }
@@ -215,8 +230,10 @@ final class AppState {
                     processingStage = .findingActions
                     await resolveActions(in: document)
                 } catch {
-                    logger.error("OCR failed: \(error.localizedDescription, privacy: .public)")
-                    statusMessage = "OCR failed: \(error.localizedDescription)"
+                    logger.error("Imported image OCR failed")
+                    workflowFailure = .imageImport(
+                        "SnapAction couldn’t recognize text in the selected image. Choose another image and try again."
+                    )
                 }
             }
         }
@@ -232,7 +249,6 @@ final class AppState {
                 message: CandidateReview.validationMessage(for: candidateToExecute)
             )
             storeExecutionFeedback(result, for: candidate.id, document: document)
-            statusMessage = result.displayMessage
             logger.warning("Action execution blocked by edited candidate validation")
             return
         }
@@ -247,7 +263,6 @@ final class AppState {
             do {
                 let result = try await workflow.execute(candidateToExecute, confirmed: confirmed, in: session)
                 storeExecutionFeedback(result, for: candidate.id, document: document)
-                statusMessage = result.displayMessage
                 refreshHistory()
                 refreshClipboardSnapshot()
                 logger.info("Action execution finished result=\(result.displayMessage, privacy: .public)")
@@ -255,19 +270,17 @@ final class AppState {
                 logger.error("Action execution failed: \(error.localizedDescription, privacy: .public)")
                 let result = ActionExecutionResult.failed(message: error.localizedDescription)
                 storeExecutionFeedback(result, for: candidate.id, document: document)
-                statusMessage = result.displayMessage
             }
         }
     }
 
     func restoreSavedClipboard() {
         guard let snapshot = lastClipboardSnapshot else {
-            statusMessage = "No saved clipboard payload yet."
+            clipboardStatus = "No saved clipboard yet"
             return
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(snapshot.text, forType: .string)
-        statusMessage = "Clipboard restored: \(snapshot.title)"
         clipboardStatus = "Ready: \(snapshot.title)"
         logger.info("Clipboard restored from durable snapshot source=\(snapshot.source.rawValue, privacy: .public)")
     }
@@ -287,6 +300,9 @@ final class AppState {
     func requestScreenRecordingPermission() {
         screenCaptureService.requestPermission()
         refreshPermissionStatus()
+        if screenCaptureAllowed, workflowFailure?.kind == .capturePermission {
+            workflowFailure = nil
+        }
     }
 
     func openSystemSettings() {
@@ -296,16 +312,33 @@ final class AppState {
     }
 
     func updateHistoryRetentionDays(_ days: Int) {
+        settingsErrorMessage = nil
         do {
-            try historyStore.setRetentionDays(days)
+            try historyRetentionUpdater(days)
             historyRetentionDays = historyStore.retentionDays
             refreshHistory()
-            let unit = historyRetentionDays == 1 ? "day" : "days"
-            statusMessage = "History retention updated to \(historyRetentionDays) \(unit)."
         } catch {
             historyRetentionDays = historyStore.retentionDays
-            statusMessage = "Could not update history retention: \(error.localizedDescription)"
-            logger.error("History retention update failed: \(error.localizedDescription, privacy: .public)")
+            settingsErrorMessage = "Could not update history retention: \(error.localizedDescription)"
+            logger.error("History retention update failed")
+        }
+    }
+
+    func dismissSettingsError() {
+        settingsErrorMessage = nil
+    }
+
+    func dismissWorkflowFailure() {
+        workflowFailure = nil
+    }
+
+    func retryWorkflowFailure() {
+        guard let retryAction = workflowFailure?.retryAction else { return }
+        switch retryAction {
+        case .capture:
+            captureScreenSnapshot()
+        case .imageImport:
+            importImageForOCR()
         }
     }
 
@@ -315,18 +348,21 @@ final class AppState {
             lastExecutionFeedback = nil
             currentDocument = session.document
             candidates = session.candidates
+            workflowFailure = nil
             activeExtractionProvenance = session.candidates.compactMap(\.extractionProvenance).first
             selectedCandidateID = session.candidates.first?.id
-            statusMessage = session.candidates.isEmpty ? "No actions found" : "Review suggested actions before confirming."
             refreshPermissionStatus()
             logger.info("Document processed blocks=\(document.blocks.count, privacy: .public) candidates=\(session.candidates.count, privacy: .public)")
         } catch {
-            logger.error("Extraction failed: \(error.localizedDescription, privacy: .public)")
-            statusMessage = "Extraction failed: \(error.localizedDescription)"
+            logger.error("Action extraction failed")
+            workflowFailure = .extraction(
+                "SnapAction couldn’t create safe actions from the recognized text. Try another capture or image."
+            )
         }
     }
 
     private func beginExtraction() {
+        workflowFailure = nil
         activeExtractionProvenance = nil
         refreshPermissionStatus()
     }

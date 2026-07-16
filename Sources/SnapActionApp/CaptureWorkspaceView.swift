@@ -48,6 +48,18 @@ struct CaptureWorkspaceView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
+            if let failure = appState.workflowFailure {
+                WorkflowFailureBanner(
+                    failure: failure,
+                    retry: appState.retryWorkflowFailure,
+                    requestScreenRecordingAccess: appState.requestScreenRecordingPermission,
+                    openPrivacySettings: appState.openSystemSettings,
+                    dismiss: appState.dismissWorkflowFailure
+                )
+                .frame(maxWidth: 560)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
             contextualRecovery
                 .frame(maxWidth: 560)
 
@@ -62,7 +74,8 @@ struct CaptureWorkspaceView: View {
         let presentation = appState.workspacePresentation
 
         VStack(spacing: 12) {
-            if presentation.showsCapturePermissionRecovery {
+            if presentation.showsCapturePermissionRecovery,
+               appState.workflowFailure?.showsCapturePermissionRecovery != true {
                 GroupBox {
                     HStack(spacing: SnapActionDesign.spacingS) {
                         Button("Request Access", action: appState.requestScreenRecordingPermission)
