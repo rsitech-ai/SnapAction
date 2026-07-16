@@ -115,3 +115,9 @@ public struct WorkspacePresentation: Equatable, Sendable {
     public var showsCapturePermissionRecovery: Bool { !screenCaptureAllowed }
     public var showsModelFallbackNotice: Bool { modelFallbackActive }
 }
+
+public enum HistoryEmptyState: Sendable {
+    public static func label(hasStoredHistory: Bool) -> String {
+        hasStoredHistory ? "No matching history" : "No history"
+    }
+}

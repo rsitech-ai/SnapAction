@@ -46,7 +46,7 @@ struct SidebarView: View {
     private var historySection: some View {
         Section("History") {
             if appState.filteredHistory.isEmpty {
-                Text("No history")
+                Text(HistoryEmptyState.label(hasStoredHistory: !appState.history.isEmpty))
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(appState.filteredHistory) { entry in

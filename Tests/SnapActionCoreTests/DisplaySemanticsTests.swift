@@ -90,3 +90,8 @@ import Testing
     #expect(blocked.showsCapturePermissionRecovery)
     #expect(blocked.showsModelFallbackNotice)
 }
+
+@Test func historyEmptyStateDistinguishesNoMatchesFromNoStoredHistory() {
+    #expect(HistoryEmptyState.label(hasStoredHistory: false) == "No history")
+    #expect(HistoryEmptyState.label(hasStoredHistory: true) == "No matching history")
+}
