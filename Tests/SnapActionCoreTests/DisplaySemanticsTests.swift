@@ -95,3 +95,8 @@ import Testing
     #expect(HistoryEmptyState.label(hasStoredHistory: false) == "No history")
     #expect(HistoryEmptyState.label(hasStoredHistory: true) == "No matching history")
 }
+
+@Test func historyRetentionLabelUsesSingularAndPluralDayUnits() {
+    #expect(HistoryRetentionPresentation.label(days: 1) == "Retain metadata for 1 day")
+    #expect(HistoryRetentionPresentation.label(days: 30) == "Retain metadata for 30 days")
+}

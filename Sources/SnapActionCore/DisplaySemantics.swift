@@ -121,3 +121,9 @@ public enum HistoryEmptyState: Sendable {
         hasStoredHistory ? "No matching history" : "No history"
     }
 }
+
+public enum HistoryRetentionPresentation: Sendable {
+    public static func label(days: Int) -> String {
+        "Retain metadata for \(days) \(days == 1 ? "day" : "days")"
+    }
+}

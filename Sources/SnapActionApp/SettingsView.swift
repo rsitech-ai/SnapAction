@@ -1,3 +1,4 @@
+import SnapActionCore
 import SwiftUI
 
 struct SettingsView: View {
@@ -46,7 +47,7 @@ struct SettingsView: View {
 
             Section("History") {
                 Stepper(value: Bindable(appState).historyRetentionDays, in: 1...90) {
-                    Text("Retain metadata for \(appState.historyRetentionDays) days")
+                    Text(HistoryRetentionPresentation.label(days: appState.historyRetentionDays))
                 }
                 Text("History stores OCR text, candidates, timestamps, and execution results. Screenshot pixels are not stored.")
                     .foregroundStyle(.secondary)
