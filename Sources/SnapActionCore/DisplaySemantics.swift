@@ -42,3 +42,38 @@ public extension ValidationState {
         }
     }
 }
+
+public enum WorkspacePhase: Equatable, Sendable {
+    case capture
+    case processing
+    case review
+
+    public static func resolve(isProcessing: Bool, hasDocument: Bool) -> WorkspacePhase {
+        if isProcessing { return .processing }
+        if hasDocument { return .review }
+        return .capture
+    }
+}
+
+public struct WorkspacePresentation: Equatable, Sendable {
+    public let phase: WorkspacePhase
+    public let hasClipboardSnapshot: Bool
+    public let screenCaptureAllowed: Bool
+    public let modelFallbackActive: Bool
+
+    public init(
+        phase: WorkspacePhase,
+        hasClipboardSnapshot: Bool,
+        screenCaptureAllowed: Bool,
+        modelFallbackActive: Bool
+    ) {
+        self.phase = phase
+        self.hasClipboardSnapshot = hasClipboardSnapshot
+        self.screenCaptureAllowed = screenCaptureAllowed
+        self.modelFallbackActive = modelFallbackActive
+    }
+
+    public var showsClipboardRestore: Bool { hasClipboardSnapshot }
+    public var showsCapturePermissionRecovery: Bool { !screenCaptureAllowed }
+    public var showsModelFallbackNotice: Bool { modelFallbackActive }
+}

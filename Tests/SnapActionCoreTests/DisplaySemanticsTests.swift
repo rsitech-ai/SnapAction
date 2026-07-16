@@ -36,3 +36,31 @@ import Testing
     #expect(!invalidCandidate.isExecutable)
     #expect(invalidCandidate.validationState.displayTone == .danger)
 }
+
+@Test func workspacePhasePrioritizesProcessingThenReviewThenCapture() {
+    #expect(WorkspacePhase.resolve(isProcessing: true, hasDocument: true) == .processing)
+    #expect(WorkspacePhase.resolve(isProcessing: false, hasDocument: true) == .review)
+    #expect(WorkspacePhase.resolve(isProcessing: false, hasDocument: false) == .capture)
+}
+
+@Test func workspacePresentationShowsOnlyContextualRecovery() {
+    let healthy = WorkspacePresentation(
+        phase: .capture,
+        hasClipboardSnapshot: false,
+        screenCaptureAllowed: true,
+        modelFallbackActive: false
+    )
+    let blocked = WorkspacePresentation(
+        phase: .capture,
+        hasClipboardSnapshot: true,
+        screenCaptureAllowed: false,
+        modelFallbackActive: true
+    )
+
+    #expect(!healthy.showsClipboardRestore)
+    #expect(!healthy.showsCapturePermissionRecovery)
+    #expect(!healthy.showsModelFallbackNotice)
+    #expect(blocked.showsClipboardRestore)
+    #expect(blocked.showsCapturePermissionRecovery)
+    #expect(blocked.showsModelFallbackNotice)
+}
