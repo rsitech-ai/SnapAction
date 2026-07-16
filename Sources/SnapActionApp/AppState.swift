@@ -295,14 +295,14 @@ final class AppState {
         }
         screenCaptureStatus = screenCaptureService.permissionSummary()
         screenCaptureAllowed = screenCaptureService.hasPermission
+        if screenCaptureAllowed, workflowFailure?.kind == .capturePermission {
+            workflowFailure = nil
+        }
     }
 
     func requestScreenRecordingPermission() {
         screenCaptureService.requestPermission()
         refreshPermissionStatus()
-        if screenCaptureAllowed, workflowFailure?.kind == .capturePermission {
-            workflowFailure = nil
-        }
     }
 
     func openSystemSettings() {
@@ -363,7 +363,6 @@ final class AppState {
 
     private func beginExtraction() {
         workflowFailure = nil
-        activeExtractionProvenance = nil
         refreshPermissionStatus()
     }
 

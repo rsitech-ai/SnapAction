@@ -23,7 +23,7 @@ func candidateReviewPreservesDeterministicFallbackProvenance() {
 
 @Test
 @MainActor
-func appStatePresentsFallbackProvenanceAndClearsItForANewExtraction() async throws {
+func appStatePresentsFallbackProvenanceUntilSuccessfulReplacement() async throws {
     let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("SnapActionFallbackProvenanceTests-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: directory) }
@@ -59,9 +59,9 @@ func appStatePresentsFallbackProvenanceAndClearsItForANewExtraction() async thro
     #expect(appState.modelStatus == "Deterministic fallback active — Apple Intelligence timed out.")
 
     appState.captureDemo()
-    #expect(appState.activeExtractionProvenance == nil)
-    #expect(!appState.modelFallbackActive)
-    #expect(appState.modelStatus == "Apple Intelligence available")
+    #expect(appState.activeExtractionProvenance == .deterministicFallback(.modelTimedOut))
+    #expect(appState.modelFallbackActive)
+    #expect(appState.modelStatus == "Deterministic fallback active — Apple Intelligence timed out.")
 
     await extractor.waitUntilSecondExtractionStarted()
     await extractor.completeSecondExtraction()
@@ -72,6 +72,51 @@ func appStatePresentsFallbackProvenanceAndClearsItForANewExtraction() async thro
     #expect(appState.activeExtractionProvenance == .foundationModels)
     #expect(!appState.modelFallbackActive)
     #expect(appState.modelStatus == "Apple Intelligence available")
+}
+
+@Test
+@MainActor
+func failedReplacementPreservesStaleFallbackProvenanceAndDisclosure() async throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SnapActionFallbackFailureTests-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let historyStore = try HistoryStore(fileURL: directory.appendingPathComponent("history.json"))
+    let clipboardStore = try ClipboardSnapshotStore(fileURL: directory.appendingPathComponent("clipboard.json"))
+    let workflow = CaptureWorkflow(
+        extractor: FallbackThenThrowExtractor(),
+        validator: ActionValidator(),
+        executor: ProvenanceTestExecutor(),
+        historyStore: historyStore
+    )
+    let appState = AppState(
+        workflow: workflow,
+        historyStore: historyStore,
+        clipboardStore: clipboardStore,
+        modelAvailabilitySummary: { "Apple Intelligence available" },
+        modelIsAvailable: { true }
+    )
+
+    appState.captureDemo()
+    while appState.isProcessing { await Task.yield() }
+    let staleDocument = appState.currentDocument
+    let staleCandidate = appState.selectedCandidate
+
+    #expect(staleCandidate?.extractionProvenance == .deterministicFallback(.modelFailed))
+    #expect(appState.activeExtractionProvenance == .deterministicFallback(.modelFailed))
+
+    appState.captureDemo()
+    while appState.isProcessing { await Task.yield() }
+
+    #expect(appState.currentDocument == staleDocument)
+    #expect(appState.selectedCandidate == staleCandidate)
+    #expect(appState.workflowFailure?.kind == .extraction)
+    #expect(appState.activeExtractionProvenance == .deterministicFallback(.modelFailed))
+    #expect(appState.modelFallbackActive)
+    #expect(appState.workspacePresentation.showsModelFallbackNotice)
+    #expect(appState.workspacePresentation.showsModelStatusInSidebar)
+    #expect(appState.modelFallbackNotice == "Deterministic fallback active — Apple Intelligence extraction failed.")
+    #expect(appState.modelStatus == "Deterministic fallback active — Apple Intelligence extraction failed.")
 }
 
 private actor SequencedProvenanceExtractor: ActionExtracting {
@@ -125,6 +170,32 @@ private actor SequencedProvenanceExtractor: ActionExtracting {
             extractionProvenance: provenance
         )
     }
+}
+
+private actor FallbackThenThrowExtractor: ActionExtracting {
+    private var invocationCount = 0
+
+    func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
+        invocationCount += 1
+        guard invocationCount == 1 else {
+            throw FallbackProvenanceTestError.replacementFailed
+        }
+        return [
+            ActionCandidate(
+                kind: .textTable,
+                title: "Fallback review",
+                confidence: 0.65,
+                sourceText: request.document.normalizedText,
+                fields: [.extractedText: request.document.normalizedText],
+                validationState: .valid,
+                extractionProvenance: .deterministicFallback(.modelFailed)
+            )
+        ]
+    }
+}
+
+private enum FallbackProvenanceTestError: Error {
+    case replacementFailed
 }
 
 private struct ProvenanceTestExecutor: ActionExecuting {
