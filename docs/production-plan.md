@@ -19,7 +19,7 @@
 - Window roles: main review window plus settings window.
 - Layout model: native sidebar-detail split view with detail review surface.
 - State ownership: app-wide `@Observable AppState`; local view state for edited candidate title.
-- Persistence: JSON files under Application Support for history and clipboard snapshot; corrupt history recovers to an empty writable file.
+- Persistence: JSON files under Application Support for history and clipboard snapshot plus an atomic retention sidecar; corrupt history recovers to an empty writable file.
 - Services: Vision OCR, ScreenCaptureKit capture, Foundation Models extraction, EventKit writes, NSPasteboard copy, OSLog telemetry.
 - App Intents / Foundation Models / advanced capabilities: Foundation Models structured extraction with deterministic fallback; App Intents deferred.
 - Folder/module structure: `SnapActionCore` for testable contracts/stores/workflow; `SnapActionApp` for SwiftUI and platform adapters.
@@ -43,7 +43,7 @@
 
 ## Test Strategy
 
-- Unit tests: OCR ordering, action validation, bounded local-model fallback, edited-title validation/persistence, AI unavailable fallback, display/history/retention semantics, history privacy, corrupt history recovery, durable clipboard snapshot, workflow execution gates.
+- Unit tests: OCR ordering, action validation, bounded model caller response, parent cancellation, single-flight model attempts, typed fallback provenance/presentation, legacy decode, edited-title validation/persistence, AI unavailable fallback, calendar-day retention pruning/persistence, history privacy/corrupt recovery, durable clipboard snapshot, and workflow execution gates.
 - Integration tests or mocks: fake extractor/executor workflow and file-backed stores.
 - UI/manual smoke: native Computer Use pass covers the capture-first shell, capture denial, import cancel, Demo processing/review, edited-title validation, Copy Text, clipboard restore, history search, Settings 1...90 boundaries, toolbar/menu/shortcuts, sidebar/review resizing, keyboard focus, zoomed large layout, relaunch persistence, and subsystem telemetry. See `docs/e2e-audit-2026-07-16-ui-polish.md`.
 - Release smoke: SwiftPM `.app` launch only; signed/notarized archive deferred.
@@ -67,7 +67,7 @@
 - Metadata: not created.
 - Review notes: permission use and local-only AI behavior need final wording.
 - Known blockers: Xcode app target or package-to-bundle release pipeline, signing, sandbox entitlements, Info.plist usage strings, privacy manifest, app icon, App Store metadata.
-- UI verification blockers: owner-granted Screen Recording; Calendar/Reminder permission and write proof; multi-candidate and large-OCR fixtures; live Light/Reduce Motion/Reduce Transparency/increased-contrast/VoiceOver matrix; MenuBarExtra and minimum-window automation with a stronger AX driver.
+- UI verification blockers: owner-granted Screen Recording; Calendar/Reminder permission and write proof; large-OCR fixture; naturally reached live timeout/failure presentation; live Light/Reduce Motion/Reduce Transparency/increased-contrast/VoiceOver matrix; MenuBarExtra and minimum-window automation with a stronger AX driver.
 
 ## Iteration Log
 
@@ -78,5 +78,5 @@
 | 2026-06-29 | Observability | Added OSLog workflow telemetry without raw OCR/clipboard text. | Telemetry showed `App state initialized ... clipboardReady=true` after restart. | Add more categories if workflows grow. |
 | 2026-06-29 | Build/run | Verified staged `.app` launch and restart loop. | `./script/build_and_run.sh --verify`; 3 restart loop passed. | Signed distribution pipeline deferred. |
 | 2026-07-16 | UI/UX | Rebuilt the shell around capture-first Quiet Focus, contextual recovery, adjustable OCR/review workspace, Warm Signals, and typed confirmation feedback. | Real worktree `.app` screenshots and native interaction matrix in `docs/e2e-audit-2026-07-16-ui-polish.md`. | Runtime appearance/accessibility variants and external permissions remain. |
-| 2026-07-16 | Runtime correctness | Bounded slow Foundation Models extraction, revalidated/persisted edited titles, clarified no-match history, and fixed 1-day retention copy. | TDD red/green cycles, full SwiftPM suite, repeated rebuild/relaunch, real Copy Text/restore/history/settings retests. | Add app-local QA fixtures for multi-candidate, long OCR, and appearance/accessibility states. |
+| 2026-07-16 | Runtime correctness | Bounded Foundation Models caller response with cancellation propagation and single-flight winding-down protection; added typed fallback provenance; revalidated/persisted edited titles; clarified no-match history; persisted and enforced 1...90-day retention. | 35-test SwiftPM suite, repeated rebuild/relaunch, two real model-success Demo runs, live two-candidate switching, and real retention 1/90/30 plus relaunch proof. | Add app-local QA fixtures for timeout/failure presentation, long OCR, and appearance/accessibility states. |
 | 2026-07-16 | Observability | Captured live `com.s1kor.snapaction` telemetry during denied capture and clipboard restore. | `.artifacts/ui-polish-2026-07-16/telemetry-subsystem.log`; no OCR or clipboard payload appeared. | Add release performance/idle profile before release-candidate claims. |
