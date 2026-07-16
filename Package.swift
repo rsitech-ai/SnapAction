@@ -25,6 +25,11 @@ let package = Package(
             name: "SnapActionCoreTests",
             dependencies: ["SnapActionCore"],
             path: "Tests/SnapActionCoreTests"
+        ),
+        .testTarget(
+            name: "SnapActionAppTests",
+            dependencies: ["SnapActionApp", "SnapActionCore"],
+            path: "Tests/SnapActionAppTests"
         )
     ]
 )

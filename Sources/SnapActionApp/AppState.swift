@@ -9,18 +9,30 @@ import SnapActionCore
 final class AppState {
     private let logger = Logger(subsystem: "com.s1kor.snapaction", category: "Workflow")
 
-    var currentDocument: OCRDocument?
-    var candidates: [ActionCandidate] = []
+    var currentDocument: OCRDocument? {
+        didSet {
+            if currentDocument != oldValue {
+                lastExecutionFeedback = nil
+            }
+        }
+    }
+    var candidates: [ActionCandidate] = [] {
+        didSet {
+            if candidates != oldValue {
+                lastExecutionFeedback = nil
+            }
+        }
+    }
     var selectedCandidateID: ActionCandidate.ID? {
         didSet {
             if selectedCandidateID != oldValue {
-                lastExecutionResult = nil
+                lastExecutionFeedback = nil
             }
         }
     }
     var history: [HistoryEntry] = []
     var lastClipboardSnapshot: ClipboardSnapshot?
-    var lastExecutionResult: ActionExecutionResult?
+    private(set) var lastExecutionFeedback: CandidateExecutionFeedback?
     var statusMessage = "Ready"
     private(set) var processingStage: ProcessingStage = .idle
     var modelStatus = "Checking Apple Intelligence..."
@@ -80,6 +92,16 @@ final class AppState {
     var selectedCandidate: ActionCandidate? {
         guard let selectedCandidateID else { return candidates.first }
         return candidates.first { $0.id == selectedCandidateID } ?? candidates.first
+    }
+
+    var lastExecutionResult: ActionExecutionResult? {
+        guard let candidateID = selectedCandidate?.id else { return nil }
+        return executionResult(for: candidateID)
+    }
+
+    func executionResult(for candidateID: ActionCandidate.ID) -> ActionExecutionResult? {
+        guard lastExecutionFeedback?.candidateID == candidateID else { return nil }
+        return lastExecutionFeedback?.result
     }
 
     var isProcessing: Bool {
@@ -184,7 +206,7 @@ final class AppState {
 
     func execute(candidate: ActionCandidate, editedTitle: String, confirmed: Bool) {
         guard processingStage.allowsNewOperation, let document = currentDocument else { return }
-        lastExecutionResult = nil
+        lastExecutionFeedback = nil
         logger.info("Action execution requested kind=\(candidate.kind.rawValue, privacy: .public) confirmed=\(confirmed, privacy: .public)")
         var candidateToExecute = candidate
         candidateToExecute.title = editedTitle
@@ -195,7 +217,7 @@ final class AppState {
             defer { processingStage = .idle }
             do {
                 let result = try await workflow.execute(candidateToExecute, confirmed: confirmed, in: session)
-                lastExecutionResult = result
+                storeExecutionFeedback(result, for: candidate.id, document: document)
                 statusMessage = result.displayMessage
                 refreshHistory()
                 refreshClipboardSnapshot()
@@ -203,7 +225,7 @@ final class AppState {
             } catch {
                 logger.error("Action execution failed: \(error.localizedDescription, privacy: .public)")
                 let result = ActionExecutionResult.failed(message: error.localizedDescription)
-                lastExecutionResult = result
+                storeExecutionFeedback(result, for: candidate.id, document: document)
                 statusMessage = result.displayMessage
             }
         }
@@ -242,7 +264,7 @@ final class AppState {
     private func resolveActions(in document: OCRDocument) async {
         do {
             let session = try await workflow.process(document: document)
-            lastExecutionResult = nil
+            lastExecutionFeedback = nil
             currentDocument = session.document
             candidates = session.candidates
             selectedCandidateID = session.candidates.first?.id
@@ -267,6 +289,20 @@ final class AppState {
             clipboardStatus = "No saved clipboard yet"
         }
     }
+
+    private func storeExecutionFeedback(
+        _ result: ActionExecutionResult,
+        for candidateID: ActionCandidate.ID,
+        document: OCRDocument
+    ) {
+        guard currentDocument == document, selectedCandidate?.id == candidateID else { return }
+        lastExecutionFeedback = CandidateExecutionFeedback(candidateID: candidateID, result: result)
+    }
+}
+
+struct CandidateExecutionFeedback: Equatable, Sendable {
+    let candidateID: ActionCandidate.ID
+    let result: ActionExecutionResult
 }
 
 enum ApplicationPaths {

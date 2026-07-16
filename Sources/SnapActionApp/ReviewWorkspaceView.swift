@@ -164,7 +164,7 @@ struct ActionReviewView: View {
 
     private var confirmationArea: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let result = appState.lastExecutionResult {
+            if let result = appState.executionResult(for: candidate.id) {
                 Label(result.displayMessage, systemImage: result.displayTone.feedbackSymbolName)
                     .font(.callout.weight(.medium))
                     .foregroundStyle(result.displayTone.color)
