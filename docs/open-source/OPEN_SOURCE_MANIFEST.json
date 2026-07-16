@@ -64,7 +64,7 @@
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md": "b42d486b1127af1e81e3d02f9481c9a4c2c3a7e49a4c8b70e3f7ac41d9546eaf",
     "script/build_and_run.sh": "f725fab92f36c2fbbbe3b09f04e023dbbf21adcf5728db1928933a3f48de9dff",
     "script/check_publication_gates.py": "be7599ce5f448d810956e32dc80bf1b402712bd2bd6e7345d11e9a406af1f886",
-    "script/check_repository_policy.py": "56f9b4bce19bb56d4039c971fa5af68617070f1724351a8e7b22e38e4b90fd2d",
+    "script/check_repository_policy.py": "6d3871cf8faef29d2cd4ed044c4764b620c000d834fa5bded3965d94d306c5e4",
     "script/generate_open_source_manifest.py": "b8ee5ca0e44ba7381b7fea3c17676541ec0b123dbc21c3d0644b9924e39ed93e",
     "script/generate_sbom.py": "b58957c46e27dfd79a90864731de270876d4cca55b996881d121ab3a90daa0f6",
     "script/publication_evidence.py": "06818f6f143befb95f6a965c5051b6e3c5684a9c853656c71b203139a36032e1"
