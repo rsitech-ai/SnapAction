@@ -58,6 +58,7 @@ struct SidebarView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
+                    .selectionDisabled()
                 }
             }
         }
