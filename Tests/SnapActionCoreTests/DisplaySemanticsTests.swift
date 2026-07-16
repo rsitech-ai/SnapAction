@@ -47,7 +47,16 @@ import Testing
     #expect(ProcessingStage.idle.label == "Ready")
     #expect(ProcessingStage.readingCapture.label == "Reading the capture")
     #expect(ProcessingStage.findingActions.label == "Finding safe actions")
+    #expect(ProcessingStage.checkingConfirmation.label == "Checking confirmation")
     #expect(ProcessingStage.executingAction.label == "Executing the action")
+}
+
+@Test func processingStageAllowsNewOperationsOnlyWhileIdle() {
+    #expect(ProcessingStage.idle.allowsNewOperation)
+    #expect(!ProcessingStage.readingCapture.allowsNewOperation)
+    #expect(!ProcessingStage.findingActions.allowsNewOperation)
+    #expect(!ProcessingStage.checkingConfirmation.allowsNewOperation)
+    #expect(!ProcessingStage.executingAction.allowsNewOperation)
 }
 
 @Test func workspacePresentationShowsOnlyContextualRecovery() {

@@ -59,7 +59,12 @@ public enum ProcessingStage: Equatable, Sendable {
     case idle
     case readingCapture
     case findingActions
+    case checkingConfirmation
     case executingAction
+
+    public var allowsNewOperation: Bool {
+        self == .idle
+    }
 
     public var label: String {
         switch self {
@@ -69,6 +74,8 @@ public enum ProcessingStage: Equatable, Sendable {
             "Reading the capture"
         case .findingActions:
             "Finding safe actions"
+        case .checkingConfirmation:
+            "Checking confirmation"
         case .executingAction:
             "Executing the action"
         }

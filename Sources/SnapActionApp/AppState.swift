@@ -111,6 +111,8 @@ final class AppState {
     }
 
     func captureDemo() {
+        guard processingStage.allowsNewOperation else { return }
+        processingStage = .findingActions
         logger.info("Capture demo requested")
         let calendar = Calendar.current
         let now = Date()
@@ -124,7 +126,6 @@ final class AppState {
         Name | Score
         Ada | 10
         """
-        processingStage = .findingActions
         Task {
             defer { processingStage = .idle }
             await resolveActions(in: .singleBlock(sample))
@@ -132,8 +133,9 @@ final class AppState {
     }
 
     func captureScreenSnapshot() {
-        logger.info("Screen snapshot capture requested")
+        guard processingStage.allowsNewOperation else { return }
         processingStage = .readingCapture
+        logger.info("Screen snapshot capture requested")
         Task {
             defer { processingStage = .idle }
             do {
@@ -150,26 +152,37 @@ final class AppState {
     }
 
     func importImageForOCR() {
+        guard processingStage.allowsNewOperation else { return }
         logger.info("Image import requested")
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         if panel.runModal() == .OK, let url = panel.url {
+            guard processingStage.allowsNewOperation else { return }
+            processingStage = .readingCapture
             Task {
-                await recognizeImage(at: url)
+                defer { processingStage = .idle }
+                do {
+                    let document = try await ocrService.recognizeText(in: url)
+                    processingStage = .findingActions
+                    await resolveActions(in: document)
+                } catch {
+                    logger.error("OCR failed: \(error.localizedDescription, privacy: .public)")
+                    statusMessage = "OCR failed: \(error.localizedDescription)"
+                }
             }
         }
     }
 
     func execute(candidate: ActionCandidate, editedTitle: String, confirmed: Bool) {
-        guard let document = currentDocument else { return }
+        guard processingStage.allowsNewOperation, let document = currentDocument else { return }
         logger.info("Action execution requested kind=\(candidate.kind.rawValue, privacy: .public) confirmed=\(confirmed, privacy: .public)")
         var candidateToExecute = candidate
         candidateToExecute.title = editedTitle
         let session = CaptureSession(document: document, candidates: candidates)
 
-        processingStage = .executingAction
+        processingStage = confirmed ? .executingAction : .checkingConfirmation
         Task {
             defer { processingStage = .idle }
             do {
@@ -212,19 +225,6 @@ final class AppState {
     func openSystemSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
-        }
-    }
-
-    private func recognizeImage(at url: URL) async {
-        processingStage = .readingCapture
-        defer { processingStage = .idle }
-        do {
-            let document = try await ocrService.recognizeText(in: url)
-            processingStage = .findingActions
-            await resolveActions(in: document)
-        } catch {
-            logger.error("OCR failed: \(error.localizedDescription, privacy: .public)")
-            statusMessage = "OCR failed: \(error.localizedDescription)"
         }
     }
 
