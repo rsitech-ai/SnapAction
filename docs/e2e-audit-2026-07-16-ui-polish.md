@@ -17,7 +17,7 @@ Computer Use interactions were performed exclusively through the `node_repl` `@o
 
 | Check | Command / tool | Result | Evidence |
 | --- | --- | --- | --- |
-| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 36 tests | Terminal output; final fresh count is recorded in the verification section below |
+| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 41 tests | Terminal output; final fresh count is recorded in the verification section below |
 | Build | `swift build` | Passed | Terminal output |
 | Bundle launch | `script/build_and_run.sh --verify`; `pgrep -x SnapAction` | Passed; launched the worktree bundle, not the original checkout | Process path `/Users/s1kor/dev/andrzej/SnapAction/.worktrees/ui-ux-polish/dist/SnapAction.app/Contents/MacOS/SnapAction` |
 | Native UI | Computer Use through `node_repl` + `@oai/sky` | Real AX state read after each interaction | Scenario matrix below |
@@ -39,6 +39,8 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 - `13-settings-minimum.png` — current 1-day lower boundary
 - `14-settings-maximum.png` — current explicit 90-day upper boundary; supersedes ambiguous `12-settings-maximum.jpeg`
 - `15-review-foundation-models.png` — post-hardening two-candidate Foundation Models review
+- `16-import-failure-empty.png` — visible image-import failure, retry, and dismiss controls in the empty capture state
+- `17-import-failure-stale-review.png` — visible image-import failure above an intact stale review candidate and OCR document
 - `retention-boundaries-ax.md` — frozen full AX text for 1, 90, restored 30, and relaunched 30 plus sidecar proof
 
 ## Scenario matrix
@@ -48,6 +50,7 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 | Fresh bundle | Build, verify launch, process path | Worktree `.app` built and launched; process proof passed | Verified |
 | Empty workspace | First/relaunch state | Capture-first hierarchy, local-processing note, permission recovery, history, and conditional clipboard restore were readable and unclipped | Verified |
 | Empty workspace | Import Image cancel | Open panel appeared and Cancel returned without state loss | Verified |
+| Empty workspace | Invalid supported image import | Typed `Image couldn’t be read` banner rendered in pixels and AX; retry reopened the native panel, Cancel preserved the error, and Dismiss removed it | Verified after fix |
 | Empty workspace | Demo Capture | Initially remained indefinitely from the caller's perspective. `cb7190f` bounds caller response; `27ad7d8` scopes gate acquisition and `defer` cleanup to the actual model operation, including pre-cancelled callers, while preventing overlap without claiming forced termination. Two live reruns completed Foundation Models before the deadline. | Verified with split live/test evidence |
 | Processing | Demo progress | Honest `Finding safe actions` progress state shown; no duplicate operation accepted | Verified |
 | Toolbar | Capture Screen | Permission denial returned to explicit Screen Recording recovery without a prompt acceptance or setting change | Verified |
@@ -55,6 +58,7 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 | Capture shortcuts | Command-Shift-1 and Command-Shift-2 | Capture denial and Demo Capture paths invoked correctly | Verified |
 | Capture menu | Menu inventory and Demo Capture | Capture Screen, Demo Capture, and Import Image entries were present; Demo executed from the menu | Partially verified; other entries share already verified handlers |
 | Candidate review | Pointer/keyboard selection | Post-hardening Demo produced Reminder and Calendar candidates; pointer selection changed the active review form to Planning sync. Earlier keyboard focus traversal remained visible. | Pointer switching verified; multi-candidate keyboard traversal not repeated |
+| Candidate review | Invalid image over an existing review | The typed image failure rendered above the action pane while the one-block OCR document and `File expenses` candidate remained visible; dismiss removed only the banner | Verified after fix |
 | Candidate review | Edit title | Empty/whitespace title now shows `Action title is required.` and disables Copy Text | Verified after fix |
 | Candidate review | Confirm edited title | Copy Text preserves the trimmed edited title in the selected candidate, editor, snapshot status, and new history row | Verified after fix |
 | Safe action | Copy Text | Clipboard received exact demo OCR text; UI showed typed success feedback | Verified |
@@ -88,7 +92,9 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 | High | Confirmed edited title reverted in editor/current candidate/history | Real Copy Text saved the edited snapshot title but AX immediately showed original title and history row | Same `723392c` updates the active candidate before constructing the persisted session | Red/green persistence test and real Copy Text show `Verified edited title persists` across candidate, field, snapshot, and history |
 | Polish | History no-match state said `No history` despite stored rows | Reproduced with a nonmatching query while two rows were stored | `60bdf9c fix: clarify filtered history state` | Focused semantics test and live AX now read `No matching history`; clearing restores rows |
 | Important | Retention Stepper did not persist or prune history | The value was a plain in-memory `Int`; `HistoryStore` had no retention policy | `a1067d7 fix: persist and enforce history retention` adds atomic sidecar persistence, calendar-day pruning on load/append, shared workflow observation, and immediate AppState pruning | Clock-controlled cutoff, append, shared-workflow, clamp, AppState, and relaunch tests; real 1/90/30 pass plus disk and relaunched UI proof |
-| Polish | Stepper minimum read `1 days` | Reproduced at the real 1-day boundary | `8e611af fix: polish retention boundary copy` | Focused semantics test; real Settings reads `Retain metadata for 1 day` |
+| Polish | Stepper minimum read `1 days` | Reproduced at the real 1-day boundary | `8e611af fix: polish retention boundary copy`; `9b105ce` clarifies the retained object | Focused semantics test; final copy is `Retain history for 1 day` |
+| Important | Workflow errors were written to dead `statusMessage` state and never rendered after StatusStrip removal | AppState catches mutated `statusMessage`, while no current view read it | `9b105ce fix: surface workflow failures` removes the dead state, adds typed capture-permission/capture/image-import/extraction presentation, and renders a shared dismissible banner in visible phase content | Four AppState failure/clearing tests, typed presentation semantics, two real invalid-image paths, retry/dismiss interaction, and matching AX/pixel evidence |
+| Polish | Healthy model status occupied sidebar space, and retention copy described metadata instead of history | Healthy launch AX always showed a redundant model row; retention promise was broader than the label | `9b105ce` makes the model section conditional on fallback and changes copy to `Retain history for N day(s)` | Semantics tests plus healthy launch AX with no Model row |
 
 ## Strict motion review
 
@@ -117,10 +123,10 @@ The built app, capture-denied recovery, bounded caller response, live multi-cand
 ### Fresh completion gate
 
 - `git diff --check` — passed.
-- `swift test` — 36 tests passed, 0 failures.
+- `swift test` — 41 tests passed, 0 failures.
 - `swift build` — passed.
-- `script/build_and_run.sh --verify` — exit 0; its nested 36-test run passed.
-- `pgrep -x SnapAction` — PID `16614` at the final remediation gate.
+- `script/build_and_run.sh --verify` — exit 0; its nested 41-test run passed.
+- `pgrep` / `ps` — PID `52081` at the final remediation gate.
 - `ps` — executable was the worktree bundle at `/Users/s1kor/dev/andrzej/SnapAction/.worktrees/ui-ux-polish/dist/SnapAction.app/Contents/MacOS/SnapAction`.
 - Pre-commit `git status --short` — only the two updated docs and the review-hardening reflection were intentional tracked/untracked changes; `.artifacts` and `.superpowers` remained ignored.
 

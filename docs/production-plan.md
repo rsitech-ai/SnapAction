@@ -43,7 +43,7 @@
 
 ## Test Strategy
 
-- Unit tests: OCR ordering, action validation, bounded model caller response, parent cancellation, single-flight model attempts, typed fallback provenance/presentation, legacy decode, edited-title validation/persistence, AI unavailable fallback, calendar-day retention pruning/persistence, history privacy/corrupt recovery, durable clipboard snapshot, and workflow execution gates.
+- Unit tests: OCR ordering, action validation, bounded model caller response, parent cancellation, single-flight model attempts, typed fallback and workflow-failure presentation, legacy decode, edited-title validation/persistence, AI unavailable fallback, calendar-day retention pruning/persistence, history privacy/corrupt recovery, durable clipboard snapshot, and workflow execution gates.
 - Integration tests or mocks: fake extractor/executor workflow and file-backed stores.
 - UI/manual smoke: native Computer Use pass covers the capture-first shell, capture denial, import cancel, Demo processing/review, edited-title validation, Copy Text, clipboard restore, history search, Settings 1...90 boundaries, toolbar/menu/shortcuts, sidebar/review resizing, keyboard focus, zoomed large layout, relaunch persistence, and subsystem telemetry. See `docs/e2e-audit-2026-07-16-ui-polish.md`.
 - Release smoke: SwiftPM `.app` launch only; signed/notarized archive deferred.
@@ -67,7 +67,7 @@
 - Metadata: not created.
 - Review notes: permission use and local-only AI behavior need final wording.
 - Known blockers: Xcode app target or package-to-bundle release pipeline, signing, sandbox entitlements, Info.plist usage strings, privacy manifest, app icon, App Store metadata.
-- UI verification blockers: owner-granted Screen Recording; Calendar/Reminder permission and write proof; large-OCR fixture; naturally reached live timeout/failure presentation; live Light/Reduce Motion/Reduce Transparency/increased-contrast/VoiceOver matrix; MenuBarExtra and minimum-window automation with a stronger AX driver.
+- UI verification blockers: owner-granted Screen Recording; Calendar/Reminder permission and write proof; large-OCR fixture; naturally reached live Foundation Models timeout/failure presentation; live Light/Reduce Motion/Reduce Transparency/increased-contrast/VoiceOver matrix; MenuBarExtra and minimum-window automation with a stronger AX driver. Image-import failure presentation is now live-verified in empty and stale-review states.
 
 ## Iteration Log
 
@@ -78,5 +78,5 @@
 | 2026-06-29 | Observability | Added OSLog workflow telemetry without raw OCR/clipboard text. | Telemetry showed `App state initialized ... clipboardReady=true` after restart. | Add more categories if workflows grow. |
 | 2026-06-29 | Build/run | Verified staged `.app` launch and restart loop. | `./script/build_and_run.sh --verify`; 3 restart loop passed. | Signed distribution pipeline deferred. |
 | 2026-07-16 | UI/UX | Rebuilt the shell around capture-first Quiet Focus, contextual recovery, adjustable OCR/review workspace, Warm Signals, and typed confirmation feedback. | Real worktree `.app` screenshots and native interaction matrix in `docs/e2e-audit-2026-07-16-ui-polish.md`. | Runtime appearance/accessibility variants and external permissions remain. |
-| 2026-07-16 | Runtime correctness | Bounded Foundation Models caller response with cancellation propagation and scoped single-flight ownership; added typed fallback provenance; revalidated/persisted edited titles; clarified no-match history; persisted and enforced 1...90-day retention. | 36-test SwiftPM suite, including pre-cancelled gate reuse and cancellation-insensitive winding-down; repeated rebuild/relaunch, two real model-success Demo runs, live two-candidate switching, and real retention 1/90/30 plus relaunch proof. | Add app-local QA fixtures for timeout/failure presentation, long OCR, and appearance/accessibility states. |
+| 2026-07-16 | Runtime correctness | Bounded Foundation Models caller response with cancellation propagation and scoped single-flight ownership; added typed fallback provenance and visible typed workflow failures; revalidated/persisted edited titles; clarified no-match history; persisted and enforced 1...90-day retention. | 41-test SwiftPM suite; repeated rebuild/relaunch; two real model-success Demo runs; live candidate switching; real retention 1/90/30 plus relaunch; invalid-image failure in empty and stale-review phases with retry/dismiss proof. | Add app-local QA fixtures for model timeout/failure, long OCR, and appearance/accessibility states. |
 | 2026-07-16 | Observability | Captured live `com.s1kor.snapaction` telemetry during denied capture and clipboard restore. | `.artifacts/ui-polish-2026-07-16/telemetry-subsystem.log`; no OCR or clipboard payload appeared. | Add release performance/idle profile before release-candidate claims. |
