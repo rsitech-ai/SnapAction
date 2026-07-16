@@ -353,6 +353,37 @@ jobs:
             issues,
         )
 
+    def test_codeql_permission_exception_requires_an_actual_pinned_action_step(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import workflow_policy_issues
+        finally:
+            sys.path.pop(0)
+
+        workflow_with_codeql_text_only = """
+name: fake CodeQL text
+on: [push]
+permissions:
+  contents: read
+jobs:
+  unrelated:
+    permissions:
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9
+"""
+
+        issues = workflow_policy_issues(
+            Path(".github/workflows/fake-codeql.yml"),
+            workflow_with_codeql_text_only,
+        )
+        self.assertIn(
+            "JOB_WRITE_PERMISSION_FORBIDDEN",
+            {issue.code for issue in issues},
+            issues,
+        )
+
     def test_codeql_manual_build_mode_is_explicit(self):
         codeql_workflow = (REPO_ROOT / ".github/workflows/codeql.yml").read_text(encoding="utf-8")
 

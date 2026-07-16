@@ -177,12 +177,14 @@ def _job_permission_issues(relative_path: str, content: str) -> list[PolicyIssue
                     permissions.append((match.group(1), match.group(2)))
 
         job_content = containing_job_content(index)
-        approved_codeql_analyze = (
-            "github/codeql-action/analyze@"
-            f"{VERIFIED_ACTION_REVISIONS['github/codeql-action']}"
+        approved_codeql_analyze = any(
+            match is not None
+            and match.group(1) == "github/codeql-action/analyze"
+            and match.group(2) == VERIFIED_ACTION_REVISIONS["github/codeql-action"]
+            for match in (ACTION_USE.match(job_line) for job_line in job_content.splitlines())
         )
         for scope, access in permissions:
-            if access == "write" and scope == "security-events" and approved_codeql_analyze in job_content:
+            if access == "write" and scope == "security-events" and approved_codeql_analyze:
                 continue
             if access in {"write", "write-all"}:
                 issues.append(
