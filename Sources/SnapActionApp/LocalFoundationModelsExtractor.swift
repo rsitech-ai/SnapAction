@@ -41,22 +41,42 @@ enum GeneratedSnapActionKind: Sendable {
 
 struct LocalFoundationModelsExtractor: ActionExtracting {
     private let fallback: any ActionExtracting
+    private let attemptGate: FoundationModelAttemptGate
 
-    init(fallback: any ActionExtracting) {
+    init(
+        fallback: any ActionExtracting,
+        attemptGate: FoundationModelAttemptGate = FoundationModelAttemptGate()
+    ) {
         self.fallback = fallback
+        self.attemptGate = attemptGate
     }
 
     func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
         #if canImport(FoundationModels)
         switch SystemLanguageModel.default.availability {
         case .available:
-            let outcome = await AsyncDeadline.run(for: .seconds(10)) {
-                let session = LanguageModelSession(instructions: Instructions(Self.instructions))
-                let response = try await session.respond(
-                    to: Prompt(Self.prompt(for: request)),
-                    generating: GeneratedSnapActions.self
-                )
-                return response.content.actions.map(Self.convert(_:))
+            guard await attemptGate.begin() else {
+                return try await fallback.extractCandidates(from: request).map { candidate in
+                    var copy = candidate
+                    copy.validationState = .warning("Apple Intelligence is still winding down; using deterministic text extraction.")
+                    return copy
+                }
+            }
+
+            let outcome = await CallerResponseDeadline.run(for: .seconds(10)) {
+                do {
+                    let session = LanguageModelSession(instructions: Instructions(Self.instructions))
+                    let response = try await session.respond(
+                        to: Prompt(Self.prompt(for: request)),
+                        generating: GeneratedSnapActions.self
+                    )
+                    let candidates = response.content.actions.map(Self.convert(_:))
+                    await attemptGate.finish()
+                    return candidates
+                } catch {
+                    await attemptGate.finish()
+                    throw error
+                }
             }
             switch outcome {
             case .success(let candidates):
@@ -75,6 +95,8 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
                     copy.validationState = .warning("Apple Intelligence took too long; using deterministic text extraction.")
                     return copy
                 }
+            case .cancelled:
+                throw CancellationError()
             }
         case .unavailable(let reason):
             return [
@@ -176,60 +198,111 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
     #endif
 }
 
-enum AsyncDeadlineOutcome<Value: Sendable>: Sendable {
+enum CallerResponseDeadlineOutcome<Value: Sendable>: Sendable {
     case success(Value)
     case failure(String)
     case timedOut
+    case cancelled
 }
 
-extension AsyncDeadlineOutcome: Equatable where Value: Equatable {}
+extension CallerResponseDeadlineOutcome: Equatable where Value: Equatable {}
 
-enum AsyncDeadline {
+enum CallerResponseDeadline {
     static func run<Value: Sendable>(
         for duration: Duration,
         operation: @escaping @Sendable () async throws -> Value
-    ) async -> AsyncDeadlineOutcome<Value> {
-        let race = AsyncDeadlineRace<Value>()
-        let operationTask = Task {
-            do {
-                await race.resolve(.success(try await operation()))
-            } catch {
-                await race.resolve(.failure(error.localizedDescription))
-            }
-        }
-        let timeoutTask = Task {
-            do {
-                try await Task.sleep(for: duration)
-                await race.resolve(.timedOut)
-            } catch {
-                // The operation completed first.
-            }
-        }
+    ) async -> CallerResponseDeadlineOutcome<Value> {
+        let state = CallerResponseDeadlineState<Value>()
 
-        let outcome = await race.result()
-        operationTask.cancel()
-        timeoutTask.cancel()
-        return outcome
+        return await withTaskCancellationHandler {
+            if Task.isCancelled {
+                await state.resolve(.cancelled)
+                return .cancelled
+            }
+
+            let operationTask = Task {
+                do {
+                    await state.resolve(.success(try await operation()))
+                } catch is CancellationError {
+                    await state.resolve(.cancelled)
+                } catch {
+                    await state.resolve(.failure(error.localizedDescription))
+                }
+            }
+            let timeoutTask = Task {
+                do {
+                    try await Task.sleep(for: duration)
+                    await state.resolve(.timedOut)
+                } catch {
+                    // The operation or parent caller completed first.
+                }
+            }
+
+            await state.install(operationTask: operationTask, timeoutTask: timeoutTask)
+            let outcome = await state.result()
+            await state.cancelPendingTasks()
+            return outcome
+        } onCancel: {
+            Task {
+                await state.cancelAndResolve()
+            }
+        }
     }
 }
 
-private actor AsyncDeadlineRace<Value: Sendable> {
-    private var outcome: AsyncDeadlineOutcome<Value>?
-    private var continuation: CheckedContinuation<AsyncDeadlineOutcome<Value>, Never>?
+actor FoundationModelAttemptGate {
+    private var attemptIsActive = false
 
-    func resolve(_ newOutcome: AsyncDeadlineOutcome<Value>) {
+    func begin() -> Bool {
+        guard !attemptIsActive else { return false }
+        attemptIsActive = true
+        return true
+    }
+
+    func finish() {
+        attemptIsActive = false
+    }
+}
+
+private actor CallerResponseDeadlineState<Value: Sendable> {
+    private var outcome: CallerResponseDeadlineOutcome<Value>?
+    private var continuation: CheckedContinuation<CallerResponseDeadlineOutcome<Value>, Never>?
+    private var operationTask: Task<Void, Never>?
+    private var timeoutTask: Task<Void, Never>?
+
+    func install(operationTask: Task<Void, Never>, timeoutTask: Task<Void, Never>) {
+        guard outcome == nil else {
+            operationTask.cancel()
+            timeoutTask.cancel()
+            return
+        }
+        self.operationTask = operationTask
+        self.timeoutTask = timeoutTask
+    }
+
+    func resolve(_ newOutcome: CallerResponseDeadlineOutcome<Value>) {
         guard outcome == nil else { return }
         outcome = newOutcome
         continuation?.resume(returning: newOutcome)
         continuation = nil
     }
 
-    func result() async -> AsyncDeadlineOutcome<Value> {
+    func result() async -> CallerResponseDeadlineOutcome<Value> {
         if let outcome {
             return outcome
         }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
         }
+    }
+
+    func cancelAndResolve() {
+        resolve(.cancelled)
+        cancelPendingTasks()
+    }
+
+    func cancelPendingTasks() {
+        operationTask?.cancel()
+        timeoutTask?.cancel()
     }
 }
