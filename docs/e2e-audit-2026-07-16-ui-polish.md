@@ -17,7 +17,7 @@ Computer Use interactions were performed exclusively through the `node_repl` `@o
 
 | Check | Command / tool | Result | Evidence |
 | --- | --- | --- | --- |
-| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 41 tests | Terminal output; final fresh count is recorded in the verification section below |
+| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 42 tests | Terminal output; final fresh count is recorded in the verification section below |
 | Build | `swift build` | Passed | Terminal output |
 | Bundle launch | `script/build_and_run.sh --verify`; `pgrep -x SnapAction` | Passed; launched the worktree bundle, not the original checkout | Process path `/Users/s1kor/dev/andrzej/SnapAction/.worktrees/ui-ux-polish/dist/SnapAction.app/Contents/MacOS/SnapAction` |
 | Native UI | Computer Use through `node_repl` + `@oai/sky` | Real AX state read after each interaction | Scenario matrix below |
@@ -87,13 +87,15 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 | Severity | Finding | Root-cause proof | Fix | Re-verification |
 | --- | --- | --- | --- | --- |
 | High | Demo Capture could remain indefinitely in `Finding safe actions` from the caller's perspective | Reproduced for more than one minute; process sample showed active FoundationModels/TokenGeneration work; extractor awaited it without a response deadline | `0d44b6e` introduced fallback; `cb7190f` adds caller cancellation; `27ad7d8 fix: scope model attempt gate ownership` acquires inside the actual operation, checks cancellation first, maps typed busy, and uses `defer` cleanup | 5 deterministic deadline/cancellation/pre-cancellation/single-flight tests, full suite, rebuild; two live Demo runs completed the model success path before the deadline |
-| High | Fallback truth was erased by validation and then hidden by an availability-only AppState refresh | Timeout/failure copy lived in `ValidationState`; `ActionValidator` replaced that field and `refreshPermissionStatus()` reset the UI to availability | `e409463 fix: surface deterministic fallback provenance` adds a backward-compatible typed provenance field and reason-specific app presentation | Legacy decode, validator/edit preservation, exact copy, full AppState presentation, and new-extraction clearing tests; current live runtime completed the model path, so no artificial timeout was induced |
+| High | Fallback truth was erased by validation and then hidden by an availability-only AppState refresh | Timeout/failure copy lived in `ValidationState`; `ActionValidator` replaced that field and `refreshPermissionStatus()` reset the UI to availability | `e409463 fix: surface deterministic fallback provenance` adds a backward-compatible typed provenance field and reason-specific app presentation | Legacy decode, validator/edit preservation, exact copy, full AppState presentation, and successful-replacement tests; current live runtime completed the model path, so no artificial timeout was induced |
 | High | Whitespace title left Copy Text enabled and could reach the executor | AX tree showed an enabled Copy Text button after setting title to whitespace; UI used the original candidate validation | `723392c fix: keep edited actions consistent` revalidates edited titles in UI and at the app-state boundary | Focused red/green tests; AX now shows disabled button, explicit reason, and no executor call |
 | High | Confirmed edited title reverted in editor/current candidate/history | Real Copy Text saved the edited snapshot title but AX immediately showed original title and history row | Same `723392c` updates the active candidate before constructing the persisted session | Red/green persistence test and real Copy Text show `Verified edited title persists` across candidate, field, snapshot, and history |
 | Polish | History no-match state said `No history` despite stored rows | Reproduced with a nonmatching query while two rows were stored | `60bdf9c fix: clarify filtered history state` | Focused semantics test and live AX now read `No matching history`; clearing restores rows |
 | Important | Retention Stepper did not persist or prune history | The value was a plain in-memory `Int`; `HistoryStore` had no retention policy | `a1067d7 fix: persist and enforce history retention` adds atomic sidecar persistence, calendar-day pruning on load/append, shared workflow observation, and immediate AppState pruning | Clock-controlled cutoff, append, shared-workflow, clamp, AppState, and relaunch tests; real 1/90/30 pass plus disk and relaunched UI proof |
 | Polish | Stepper minimum read `1 days` | Reproduced at the real 1-day boundary | `8e611af fix: polish retention boundary copy`; `9b105ce` clarifies the retained object | Focused semantics test; final copy is `Retain history for 1 day` |
 | Important | Workflow errors were written to dead `statusMessage` state and never rendered after StatusStrip removal | AppState catches mutated `statusMessage`, while no current view read it | `9b105ce fix: surface workflow failures` removes the dead state, adds typed capture-permission/capture/image-import/extraction presentation, and renders a shared dismissible banner in visible phase content | Four AppState failure/clearing tests, typed presentation semantics, two real invalid-image paths, retry/dismiss interaction, and matching AX/pixel evidence |
+| Important | A failed replacement preserved stale review content but prematurely erased its deterministic-fallback disclosure | `beginExtraction()` cleared provenance before the replacement had produced a successful session | `a3fe558 fix: preserve stale extraction provenance` makes successful resolution the provenance commit point | Focused pending-success and failed-replacement tests prove stale candidate/provenance/disclosure persistence and correct successful replacement |
+| Polish | Screen Recording recovery could stay stale after permission was granted in System Settings | Scene activation refreshed permission state, but failure cleanup existed only in the in-app Request Access action | `a3fe558` centralizes permission-failure cleanup inside `refreshPermissionStatus()` | Scene activation and Request Access now share the same cleanup path; full suite and bundle verification pass |
 | Polish | Healthy model status occupied sidebar space, and retention copy described metadata instead of history | Healthy launch AX always showed a redundant model row; retention promise was broader than the label | `9b105ce` makes the model section conditional on fallback and changes copy to `Retain history for N day(s)` | Semantics tests plus healthy launch AX with no Model row |
 
 ## Strict motion review
@@ -123,11 +125,11 @@ The built app, capture-denied recovery, bounded caller response, live multi-cand
 ### Fresh completion gate
 
 - `git diff --check` — passed.
-- `swift test` — 41 tests passed, 0 failures.
+- `swift test` — 42 tests passed, 0 failures.
 - `swift build` — passed.
-- `script/build_and_run.sh --verify` — exit 0; its nested 41-test run passed.
-- `pgrep` / `ps` — PID `52081` at the final remediation gate.
+- `script/build_and_run.sh --verify` — exit 0; its nested 42-test run passed.
+- `pgrep` / `ps` — PID `68632` at the final reviewed worktree gate.
 - `ps` — executable was the worktree bundle at `/Users/s1kor/dev/andrzej/SnapAction/.worktrees/ui-ux-polish/dist/SnapAction.app/Contents/MacOS/SnapAction`.
-- Pre-commit `git status --short` — only the two updated docs and the review-hardening reflection were intentional tracked/untracked changes; `.artifacts` and `.superpowers` remained ignored.
+- Pre-commit `git status --short` — only the updated audit, production plan, and review-hardening reflection were intentional tracked changes; `.artifacts` and `.superpowers` remained ignored.
 
 The next targeted pass should add an app-local QA fixture/launch override for multiple candidate kinds, large OCR, Light/Dark, Reduce Motion/Transparency, and increased contrast; then rerun MenuBarExtra and minimum-window automation with a status-item/window-frame-capable driver.

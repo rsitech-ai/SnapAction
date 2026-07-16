@@ -9,7 +9,7 @@
 
 ## Success and Risk
 
-- **Success criteria:** A bounded caller response with cancellation propagation, scoped gate ownership, and non-overlap; typed fallback and workflow-failure truth visible in the active phase; persisted calendar-day retention observed by UI and workflow; 41-test/build/bundle verification; conservative real-UI evidence.
+- **Success criteria:** A bounded caller response with cancellation propagation, scoped gate ownership, and non-overlap; typed fallback and workflow-failure truth visible in the active phase and preserved transactionally across failed replacement; persisted calendar-day retention observed by UI and workflow; 42-test/build/bundle verification; conservative real-UI evidence.
 - **Hypothesis 1:** Canceling an unstructured model task is enough to guarantee the operation terminates by the deadline.
 - **Hypothesis 2:** A warning in `ValidationState` is sufficient to preserve and present deterministic fallback truth.
 - **Hypothesis 3:** A Stepper-bound integer is sufficient to describe retention behavior without a store-level policy.
@@ -34,8 +34,8 @@
 
 ## Decision
 
-- **Root cause or remaining unknown:** The original task conflated caller latency with child-task lifetime, coupled fallback truth to a mutable validation field, treated retention as presentation-only state, and continued writing workflow errors to a removed status surface. Root-level banners were also clipped by the unified macOS titlebar; phase-local placement was required for matching AX and visible pixels. Whether a future Foundation Models call ignores cancellation and for how long remains framework-controlled.
-- **Retained fix / direction:** Caller-response deadline plus a scoped attempt runner that checks cancellation before acquisition, returns typed busy, and releases through actor-isolated `defer`; optional typed extraction provenance; typed phase-local workflow failures with retry/dismiss; atomic file-backed 1...90-day retention enforced at the store boundary.
+- **Root cause or remaining unknown:** The original task conflated caller latency with child-task lifetime, coupled fallback truth to a mutable validation field, treated retention as presentation-only state, and continued writing workflow errors to a removed status surface. Replacement work also cleared provenance before it had a successful result to commit. Root-level banners were clipped by the unified macOS titlebar; phase-local placement was required for matching AX and visible pixels. Whether a future Foundation Models call ignores cancellation and for how long remains framework-controlled.
+- **Retained fix / direction:** Caller-response deadline plus a scoped attempt runner that checks cancellation before acquisition, returns typed busy, and releases through actor-isolated `defer`; optional typed extraction provenance committed only on successful replacement; typed phase-local workflow failures with retry/dismiss; atomic file-backed 1...90-day retention enforced at the store boundary.
 - **Why alternatives were rejected:** They either preserved false claims, allowed overlapping model work, lost fallback truth, or bypassed retention in workflow/relaunch paths.
 - **Residual risk:** A cancellation-insensitive Foundation Models call can still consume resources after fallback, though it blocks a second model attempt. Live timeout/failure presentation is integration-proven but was not naturally reached in the final runtime pass.
 - **Rollback trigger:** Regressed responsiveness, history corruption/pruning beyond the selected calendar cutoff, legacy decode failure, or a reproducible gate deadlock.
