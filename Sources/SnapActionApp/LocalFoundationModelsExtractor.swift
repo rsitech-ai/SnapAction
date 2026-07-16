@@ -50,20 +50,29 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         #if canImport(FoundationModels)
         switch SystemLanguageModel.default.availability {
         case .available:
-            do {
+            let outcome = await AsyncDeadline.run(for: .seconds(10)) {
                 let session = LanguageModelSession(instructions: Instructions(Self.instructions))
                 let response = try await session.respond(
                     to: Prompt(Self.prompt(for: request)),
                     generating: GeneratedSnapActions.self
                 )
-                let candidates = response.content.actions.map(Self.convert(_:))
+                return response.content.actions.map(Self.convert(_:))
+            }
+            switch outcome {
+            case .success(let candidates):
                 if !candidates.isEmpty {
                     return candidates
                 }
-            } catch {
+            case .failure:
                 return try await fallback.extractCandidates(from: request).map { candidate in
                     var copy = candidate
                     copy.validationState = .warning("Apple Intelligence extraction failed; using deterministic text extraction.")
+                    return copy
+                }
+            case .timedOut:
+                return try await fallback.extractCandidates(from: request).map { candidate in
+                    var copy = candidate
+                    copy.validationState = .warning("Apple Intelligence took too long; using deterministic text extraction.")
                     return copy
                 }
             }
@@ -165,4 +174,62 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         }
     }
     #endif
+}
+
+enum AsyncDeadlineOutcome<Value: Sendable>: Sendable {
+    case success(Value)
+    case failure(String)
+    case timedOut
+}
+
+extension AsyncDeadlineOutcome: Equatable where Value: Equatable {}
+
+enum AsyncDeadline {
+    static func run<Value: Sendable>(
+        for duration: Duration,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async -> AsyncDeadlineOutcome<Value> {
+        let race = AsyncDeadlineRace<Value>()
+        let operationTask = Task {
+            do {
+                await race.resolve(.success(try await operation()))
+            } catch {
+                await race.resolve(.failure(error.localizedDescription))
+            }
+        }
+        let timeoutTask = Task {
+            do {
+                try await Task.sleep(for: duration)
+                await race.resolve(.timedOut)
+            } catch {
+                // The operation completed first.
+            }
+        }
+
+        let outcome = await race.result()
+        operationTask.cancel()
+        timeoutTask.cancel()
+        return outcome
+    }
+}
+
+private actor AsyncDeadlineRace<Value: Sendable> {
+    private var outcome: AsyncDeadlineOutcome<Value>?
+    private var continuation: CheckedContinuation<AsyncDeadlineOutcome<Value>, Never>?
+
+    func resolve(_ newOutcome: AsyncDeadlineOutcome<Value>) {
+        guard outcome == nil else { return }
+        outcome = newOutcome
+        continuation?.resume(returning: newOutcome)
+        continuation = nil
+    }
+
+    func result() async -> AsyncDeadlineOutcome<Value> {
+        if let outcome {
+            return outcome
+        }
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
 }
