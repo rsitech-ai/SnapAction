@@ -29,12 +29,12 @@ struct SnapActionApp: App {
                 }
                 .keyboardShortcut("1", modifiers: [.command, .shift])
 
-                Button("Capture Demo") {
+                Button("Demo Capture") {
                     appState.captureDemo()
                 }
                 .keyboardShortcut("2", modifiers: [.command, .shift])
 
-                Button("Import Image for OCR") {
+                Button("Import Image") {
                     appState.importImageForOCR()
                 }
                 .keyboardShortcut("i", modifiers: [.command, .shift])
@@ -45,7 +45,7 @@ struct SnapActionApp: App {
             Button("Capture Screen") {
                 appState.captureScreenSnapshot()
             }
-            Button("Capture Demo") {
+            Button("Demo Capture") {
                 appState.captureDemo()
             }
             Button("Import Image") {

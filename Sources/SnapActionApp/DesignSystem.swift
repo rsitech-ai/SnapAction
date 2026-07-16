@@ -2,8 +2,12 @@ import SnapActionCore
 import SwiftUI
 
 enum SnapActionDesign {
-    static let panelRadius: CGFloat = 18
-    static let compactRadius: CGFloat = 12
+    static let spacingXS: CGFloat = 6
+    static let spacingS: CGFloat = 10
+    static let spacingM: CGFloat = 16
+    static let spacingL: CGFloat = 24
+    static let workspaceRadius: CGFloat = 22
+    static let groupRadius: CGFloat = 14
 }
 
 extension DisplayTone {
@@ -39,52 +43,55 @@ extension ConfidenceBand {
 }
 
 extension View {
-    func snapGlassPanel(
+    func snapSurface(
         tone: DisplayTone = .neutral,
-        interactive: Bool = false,
-        cornerRadius: CGFloat = SnapActionDesign.panelRadius
+        cornerRadius: CGFloat = SnapActionDesign.workspaceRadius
     ) -> some View {
-        modifier(SnapGlassPanelModifier(tone: tone, interactive: interactive, cornerRadius: cornerRadius))
+        modifier(SnapSurfaceModifier(tone: tone, cornerRadius: cornerRadius))
     }
 }
 
-private struct SnapGlassPanelModifier: ViewModifier {
+private struct SnapSurfaceModifier: ViewModifier {
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     let tone: DisplayTone
-    let interactive: Bool
     let cornerRadius: CGFloat
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+
+        if reduceTransparency {
             content
-                .glassEffect(
-                    interactive
-                        ? .regular.tint(tone.softColor).interactive()
-                        : .regular.tint(tone.softColor),
-                    in: .rect(cornerRadius: cornerRadius)
-                )
+                .background(.background, in: shape)
+                .overlay { boundary(shape) }
+        } else if #available(macOS 26.0, *) {
+            if tone == .neutral {
+                content
+                    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+                    .overlay { boundary(shape) }
+            } else {
+                content
+                    .glassEffect(.regular.tint(tone.softColor), in: .rect(cornerRadius: cornerRadius))
+                    .overlay { boundary(shape) }
+            }
         } else {
             content
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-                .overlay {
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(tone.color.opacity(0.18), lineWidth: 1)
-                }
+                .overlay { boundary(shape) }
         }
     }
-}
 
-struct SnapMetricPill: View {
-    let icon: String
-    let text: String
-    let tone: DisplayTone
+    private var boundaryColor: Color {
+        if colorSchemeContrast == .increased {
+            return .primary.opacity(0.28)
+        }
 
-    var body: some View {
-        Label(text, systemImage: icon)
-            .font(.caption.weight(.medium))
-            .foregroundStyle(tone.color)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .snapGlassPanel(tone: tone, interactive: true, cornerRadius: 20)
-            .lineLimit(1)
+        return tone == .neutral ? .primary.opacity(0.08) : tone.color.opacity(0.18)
+    }
+
+    private func boundary(_ shape: RoundedRectangle) -> some View {
+        shape.stroke(boundaryColor, lineWidth: colorSchemeContrast == .increased ? 1.5 : 1)
     }
 }
