@@ -14,9 +14,9 @@ from publication_evidence import build_manifest
 REPO_ROOT = Path(__file__).resolve().parents[1]
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 ACTION_USE = re.compile(
-    r"^\s*-\s+uses:\s+([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*)@([^\s#]+)(?:\s+#\s*(.+))?\s*$"
+    r"^\s*(?:-\s+)?uses:\s+([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*)@([^\s#]+)(?:\s+#\s*(.+))?\s*$"
 )
-ANY_ACTION_USE = re.compile(r"^\s*-\s+uses:\s+(.+?)\s*$")
+ANY_ACTION_USE = re.compile(r"^\s*(?:-\s+)?uses:\s+(.+?)\s*$")
 
 VERIFIED_ACTION_REVISIONS = {
     "actions/checkout": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",  # v7.0.0
@@ -108,6 +108,16 @@ def _top_level_permissions(content: str) -> list[str] | None:
 def _declared_triggers(content: str) -> set[str]:
     lines = content.splitlines()
     for index, line in enumerate(lines):
+        inline = re.fullmatch(r"on:\s*\[([^]]*)\]\s*", line)
+        if inline:
+            return {
+                trigger.strip().strip("'\"")
+                for trigger in inline.group(1).split(",")
+                if trigger.strip()
+            }
+        scalar = re.fullmatch(r"on:\s*([A-Za-z_]+)\s*", line)
+        if scalar:
+            return {scalar.group(1)}
         if line == "on:":
             triggers: set[str] = set()
             for nested in lines[index + 1 :]:
@@ -118,6 +128,49 @@ def _declared_triggers(content: str) -> set[str]:
                     triggers.add(match.group(1))
             return triggers
     return set()
+
+
+def _job_permission_issues(relative_path: str, content: str) -> list[PolicyIssue]:
+    issues: list[PolicyIssue] = []
+    lines = content.splitlines()
+    for index, line in enumerate(lines):
+        block = re.fullmatch(r"(\s+)permissions:\s*", line)
+        inline = re.fullmatch(r"(\s+)permissions:\s*\{([^}]*)\}\s*", line)
+        scalar = re.fullmatch(r"(\s+)permissions:\s*(read-all|write-all|\{\})\s*", line)
+        if not (block or inline or scalar):
+            continue
+        indent = len((block or inline or scalar).group(1))
+        if indent == 0:
+            continue
+
+        permissions: list[tuple[str, str]] = []
+        if inline:
+            for entry in inline.group(2).split(","):
+                if ":" in entry:
+                    key, value = entry.split(":", 1)
+                    permissions.append((key.strip(), value.strip()))
+        elif scalar:
+            permissions.append(("*", scalar.group(2)))
+        else:
+            for nested in lines[index + 1 :]:
+                if nested.strip() and len(nested) - len(nested.lstrip()) <= indent:
+                    break
+                match = re.fullmatch(r"\s+([A-Za-z-]+):\s*([A-Za-z-]+)\s*", nested)
+                if match:
+                    permissions.append((match.group(1), match.group(2)))
+
+        for scope, access in permissions:
+            if access == "write" and scope == "security-events" and "github/codeql-action/analyze@" in content:
+                continue
+            if access in {"write", "write-all"}:
+                issues.append(
+                    PolicyIssue(
+                        "JOB_WRITE_PERMISSION_FORBIDDEN",
+                        relative_path,
+                        f"job-level permission {scope}: {access} is not an approved least-privilege exception",
+                    )
+                )
+    return issues
 
 
 def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
@@ -143,6 +196,9 @@ def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
             )
         )
 
+    issues.extend(_job_permission_issues(relative_path, content))
+
+    action_occurrences: list[tuple[str, int]] = []
     for line_number, line in enumerate(content.splitlines(), start=1):
         any_use = ANY_ACTION_USE.match(line)
         match = ACTION_USE.match(line)
@@ -160,6 +216,7 @@ def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
         if not match:
             continue
         action, revision, version_comment = match.groups()
+        action_occurrences.append(("/".join(action.split("/")[:2]), line_number))
         if not FULL_SHA.fullmatch(revision):
             issues.append(
                 PolicyIssue(
@@ -186,6 +243,29 @@ def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
                     f"line {line_number}: {action} is missing a human-readable version comment",
                 )
             )
+
+    dependency_review_lines = [
+        line_number
+        for action, line_number in action_occurrences
+        if action == "actions/dependency-review-action"
+    ]
+    checkout_lines = [
+        line_number
+        for action, line_number in action_occurrences
+        if action == "actions/checkout"
+    ]
+    if dependency_review_lines and not any(
+        checkout_line < dependency_line
+        for dependency_line in dependency_review_lines
+        for checkout_line in checkout_lines
+    ):
+        issues.append(
+            PolicyIssue(
+                "DEPENDENCY_REVIEW_CHECKOUT_MISSING",
+                relative_path,
+                "dependency review must run after a pinned source checkout",
+            )
+        )
 
     triggers = _declared_triggers(content)
     if {"pull_request", "pull_request_target"} & triggers:
