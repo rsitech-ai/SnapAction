@@ -5,4 +5,7 @@ dist/
 *.xcodeproj
 *.xcworkspace
 .DS_Store
+.artifacts/
+.superpowers/
+.worktrees/
 docs/superpowers/plans/*.tmp
