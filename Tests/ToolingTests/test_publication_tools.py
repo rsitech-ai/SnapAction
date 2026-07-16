@@ -248,6 +248,77 @@ jobs:
             }.issubset(issue_codes)
         )
 
+    def test_workflow_policy_rejects_named_step_pins_inline_pr_secrets_and_job_escalation(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import workflow_policy_issues
+        finally:
+            sys.path.pop(0)
+
+        unsafe_workflow = """
+name: unsafe production syntax
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  unsafe:
+    permissions:
+      contents: write
+      id-token: write
+    runs-on: macos-26
+    steps:
+      - name: Unsafe checkout
+        uses: actions/checkout@v7
+      - name: Leak a pull-request secret
+        run: echo "${{ secrets.APPLE_API_KEY }}"
+"""
+
+        issues = workflow_policy_issues(Path(".github/workflows/unsafe.yml"), unsafe_workflow)
+        issue_codes = {issue.code for issue in issues}
+        self.assertTrue(
+            {
+                "ACTION_NOT_PINNED",
+                "JOB_WRITE_PERMISSION_FORBIDDEN",
+                "PULL_REQUEST_SECRET_REFERENCE",
+            }.issubset(issue_codes),
+            issues,
+        )
+
+    def test_dependency_review_policy_requires_checkout_before_review_action(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import workflow_policy_issues
+        finally:
+            sys.path.pop(0)
+
+        workflow_without_checkout = """
+name: Dependency review
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+"""
+
+        issues = workflow_policy_issues(
+            Path(".github/workflows/dependency-review.yml"),
+            workflow_without_checkout,
+        )
+        self.assertIn(
+            "DEPENDENCY_REVIEW_CHECKOUT_MISSING",
+            {issue.code for issue in issues},
+            issues,
+        )
+
+    def test_codeql_manual_build_mode_is_explicit(self):
+        codeql_workflow = (REPO_ROOT / ".github/workflows/codeql.yml").read_text(encoding="utf-8")
+
+        self.assertIn("build-mode: manual", codeql_workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
