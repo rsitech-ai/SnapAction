@@ -18,6 +18,8 @@ final class AppState {
     var isProcessing = false
     var modelStatus = "Checking Apple Intelligence..."
     var screenCaptureStatus = "Checking Screen Recording..."
+    private(set) var modelFallbackActive = false
+    private var screenCaptureAllowed = false
     var eventKitStatus = "Calendar and Reminders permissions are requested on first write."
     var clipboardStatus = "No saved clipboard yet"
     var historyRetentionDays = 30
@@ -73,15 +75,11 @@ final class AppState {
         return candidates.first { $0.id == selectedCandidateID } ?? candidates.first
     }
 
-    var modelFallbackActive: Bool {
-        !LocalFoundationModelsExtractor.isAvailable
-    }
-
     var workspacePresentation: WorkspacePresentation {
         WorkspacePresentation(
             phase: .resolve(isProcessing: isProcessing, hasDocument: currentDocument != nil),
             hasClipboardSnapshot: lastClipboardSnapshot != nil,
-            screenCaptureAllowed: screenCaptureService.hasPermission,
+            screenCaptureAllowed: screenCaptureAllowed,
             modelFallbackActive: modelFallbackActive
         )
     }
@@ -195,6 +193,8 @@ final class AppState {
     func refreshPermissionStatus() {
         modelStatus = LocalFoundationModelsExtractor.availabilitySummary()
         screenCaptureStatus = screenCaptureService.permissionSummary()
+        modelFallbackActive = !LocalFoundationModelsExtractor.isAvailable
+        screenCaptureAllowed = screenCaptureService.hasPermission
     }
 
     func requestScreenRecordingPermission() {

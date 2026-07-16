@@ -3,12 +3,13 @@ import SwiftUI
 
 struct ContentView: View {
     let appState: AppState
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationSplitView {
             SidebarView(appState: appState)
         } detail: {
-            DetailView(appState: appState)
+            WorkspaceView(appState: appState)
         }
         .toolbar {
             ToolbarItemGroup {
@@ -23,6 +24,11 @@ struct ContentView: View {
                 .help("Import an image for text recognition")
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                appState.refreshPermissionStatus()
+            }
+        }
     }
 }
 
@@ -30,44 +36,12 @@ struct DetailView: View {
     let appState: AppState
 
     var body: some View {
-        VStack(spacing: 0) {
-            StatusStrip(appState: appState)
-            HSplitView {
-                OCRPreview(document: appState.currentDocument)
-                    .frame(minWidth: 360)
-                CandidateDetailView(appState: appState, candidate: appState.selectedCandidate)
-                    .frame(minWidth: 420)
-            }
+        HSplitView {
+            OCRPreview(document: appState.currentDocument)
+                .frame(minWidth: 360)
+            CandidateDetailView(appState: appState, candidate: appState.selectedCandidate)
+                .frame(minWidth: 420)
         }
-        .navigationTitle("Review")
-    }
-}
-
-struct StatusStrip: View {
-    let appState: AppState
-
-    var body: some View {
-        HStack(spacing: 12) {
-            ProcessingHalo(isActive: appState.isProcessing)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(appState.statusMessage)
-                    .font(.callout.weight(.semibold))
-                    .contentTransition(.opacity)
-                Text(appState.isProcessing ? "Analyzing pixels, text, and intent" : "Local-first actions, confirmed by you")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 16)
-            SnapMetricPill(icon: "apple.intelligence", text: appState.modelStatus, tone: .neutral)
-            SnapMetricPill(icon: "rectangle.dashed", text: appState.screenCaptureStatus, tone: .neutral)
-            SnapMetricPill(icon: "doc.on.clipboard", text: appState.clipboardStatus, tone: .success)
-        }
-        .lineLimit(1)
-        .padding(14)
-        .snapGlassPanel(interactive: true, cornerRadius: 22)
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 8)
     }
 }
 
@@ -249,9 +223,6 @@ struct EmptyReviewSurface: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            ProcessingHalo(isActive: false)
-                .scaleEffect(1.45)
-                .padding(.bottom, 8)
             Text("Ready for the next snap")
                 .font(.title3.weight(.semibold))
             Text("Capture the screen, run the demo, or import an image. Suggestions appear here as editable, confirmed actions.")
