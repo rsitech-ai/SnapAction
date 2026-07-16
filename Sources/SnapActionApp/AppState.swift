@@ -15,7 +15,7 @@ final class AppState {
     var history: [HistoryEntry] = []
     var lastClipboardSnapshot: ClipboardSnapshot?
     var statusMessage = "Ready"
-    var isProcessing = false
+    private(set) var processingStage: ProcessingStage = .idle
     var modelStatus = "Checking Apple Intelligence..."
     var screenCaptureStatus = "Checking Screen Recording..."
     private(set) var modelFallbackActive = false
@@ -75,6 +75,10 @@ final class AppState {
         return candidates.first { $0.id == selectedCandidateID } ?? candidates.first
     }
 
+    var isProcessing: Bool {
+        processingStage != .idle
+    }
+
     var workspacePresentation: WorkspacePresentation {
         WorkspacePresentation(
             phase: .resolve(isProcessing: isProcessing, hasDocument: currentDocument != nil),
@@ -85,7 +89,7 @@ final class AppState {
     }
 
     var processingLabel: String {
-        currentDocument == nil ? "Reading the capture" : "Finding safe actions"
+        processingStage.label
     }
 
     var filteredHistory: [HistoryEntry] {
@@ -120,20 +124,23 @@ final class AppState {
         Name | Score
         Ada | 10
         """
+        processingStage = .findingActions
         Task {
-            await process(document: .singleBlock(sample))
+            defer { processingStage = .idle }
+            await resolveActions(in: .singleBlock(sample))
         }
     }
 
     func captureScreenSnapshot() {
         logger.info("Screen snapshot capture requested")
+        processingStage = .readingCapture
         Task {
-            isProcessing = true
-            defer { isProcessing = false }
+            defer { processingStage = .idle }
             do {
                 let image = try await screenCaptureService.captureFirstDisplayImage()
                 let document = try await ocrService.recognizeText(in: image)
-                await process(document: document)
+                processingStage = .findingActions
+                await resolveActions(in: document)
             } catch {
                 logger.error("Screen capture failed: \(error.localizedDescription, privacy: .public)")
                 statusMessage = "Screen Recording permission needed. Open Settings to continue."
@@ -162,9 +169,9 @@ final class AppState {
         candidateToExecute.title = editedTitle
         let session = CaptureSession(document: document, candidates: candidates)
 
+        processingStage = .executingAction
         Task {
-            isProcessing = true
-            defer { isProcessing = false }
+            defer { processingStage = .idle }
             do {
                 let result = try await workflow.execute(candidateToExecute, confirmed: confirmed, in: session)
                 statusMessage = result.displayMessage
@@ -209,20 +216,19 @@ final class AppState {
     }
 
     private func recognizeImage(at url: URL) async {
-        isProcessing = true
-        defer { isProcessing = false }
+        processingStage = .readingCapture
+        defer { processingStage = .idle }
         do {
             let document = try await ocrService.recognizeText(in: url)
-            await process(document: document)
+            processingStage = .findingActions
+            await resolveActions(in: document)
         } catch {
             logger.error("OCR failed: \(error.localizedDescription, privacy: .public)")
             statusMessage = "OCR failed: \(error.localizedDescription)"
         }
     }
 
-    private func process(document: OCRDocument) async {
-        isProcessing = true
-        defer { isProcessing = false }
+    private func resolveActions(in document: OCRDocument) async {
         do {
             let session = try await workflow.process(document: document)
             currentDocument = session.document

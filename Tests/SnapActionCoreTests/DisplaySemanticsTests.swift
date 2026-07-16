@@ -43,6 +43,13 @@ import Testing
     #expect(WorkspacePhase.resolve(isProcessing: false, hasDocument: false) == .capture)
 }
 
+@Test func processingStageExposesTruthfulLabels() {
+    #expect(ProcessingStage.idle.label == "Ready")
+    #expect(ProcessingStage.readingCapture.label == "Reading the capture")
+    #expect(ProcessingStage.findingActions.label == "Finding safe actions")
+    #expect(ProcessingStage.executingAction.label == "Executing the action")
+}
+
 @Test func workspacePresentationShowsOnlyContextualRecovery() {
     let healthy = WorkspacePresentation(
         phase: .capture,

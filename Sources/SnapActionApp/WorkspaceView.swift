@@ -16,13 +16,6 @@ struct WorkspaceView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("Review")
-        .transition(.opacity)
-        .animation(
-            appState.workspacePresentation.phase == .review
-                ? .easeOut(duration: 0.16)
-                : nil,
-            value: appState.workspacePresentation.phase
-        )
     }
 }
 

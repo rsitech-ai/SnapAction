@@ -55,6 +55,26 @@ public enum WorkspacePhase: Equatable, Sendable {
     }
 }
 
+public enum ProcessingStage: Equatable, Sendable {
+    case idle
+    case readingCapture
+    case findingActions
+    case executingAction
+
+    public var label: String {
+        switch self {
+        case .idle:
+            "Ready"
+        case .readingCapture:
+            "Reading the capture"
+        case .findingActions:
+            "Finding safe actions"
+        case .executingAction:
+            "Executing the action"
+        }
+    }
+}
+
 public struct WorkspacePresentation: Equatable, Sendable {
     public let phase: WorkspacePhase
     public let hasClipboardSnapshot: Bool
