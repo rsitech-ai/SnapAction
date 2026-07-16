@@ -55,28 +55,13 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         #if canImport(FoundationModels)
         switch SystemLanguageModel.default.availability {
         case .available:
-            guard await attemptGate.begin() else {
-                return try await deterministicFallback(
-                    from: request,
-                    reason: .modelBusy,
-                    warning: "Apple Intelligence is still winding down; using deterministic text extraction."
+            let outcome = await FoundationModelAttemptRunner.run(for: .seconds(10), gate: attemptGate) {
+                let session = LanguageModelSession(instructions: Instructions(Self.instructions))
+                let response = try await session.respond(
+                    to: Prompt(Self.prompt(for: request)),
+                    generating: GeneratedSnapActions.self
                 )
-            }
-
-            let outcome = await CallerResponseDeadline.run(for: .seconds(10)) {
-                do {
-                    let session = LanguageModelSession(instructions: Instructions(Self.instructions))
-                    let response = try await session.respond(
-                        to: Prompt(Self.prompt(for: request)),
-                        generating: GeneratedSnapActions.self
-                    )
-                    let candidates = response.content.actions.map(Self.convert(_:))
-                    await attemptGate.finish()
-                    return candidates
-                } catch {
-                    await attemptGate.finish()
-                    throw error
-                }
+                return response.content.actions.map(Self.convert(_:))
             }
             switch outcome {
             case .success(let candidates):
@@ -97,6 +82,12 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
                 )
             case .cancelled:
                 throw CancellationError()
+            case .busy:
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelBusy,
+                    warning: "Apple Intelligence is still winding down; using deterministic text extraction."
+                )
             }
             return try await deterministicFallback(
                 from: request,
@@ -276,15 +267,70 @@ enum CallerResponseDeadline {
 
 actor FoundationModelAttemptGate {
     private var attemptIsActive = false
+    private var idleContinuations: [CheckedContinuation<Void, Never>] = []
 
-    func begin() -> Bool {
-        guard !attemptIsActive else { return false }
+    func run<Value: Sendable>(
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> FoundationModelGatedOperationOutcome<Value> {
+        try Task.checkCancellation()
+        guard !attemptIsActive else { return .busy }
         attemptIsActive = true
-        return true
+        defer { finish() }
+        return .success(try await operation())
     }
 
-    func finish() {
+    func waitUntilIdle() async {
+        guard attemptIsActive else { return }
+        await withCheckedContinuation { continuation in
+            idleContinuations.append(continuation)
+        }
+    }
+
+    private func finish() {
         attemptIsActive = false
+        idleContinuations.forEach { $0.resume() }
+        idleContinuations.removeAll()
+    }
+}
+
+enum FoundationModelGatedOperationOutcome<Value: Sendable>: Sendable {
+    case success(Value)
+    case busy
+}
+
+enum FoundationModelAttemptOutcome<Value: Sendable>: Sendable {
+    case success(Value)
+    case failure(String)
+    case timedOut
+    case cancelled
+    case busy
+}
+
+extension FoundationModelAttemptOutcome: Equatable where Value: Equatable {}
+
+enum FoundationModelAttemptRunner {
+    static func run<Value: Sendable>(
+        for duration: Duration,
+        gate: FoundationModelAttemptGate,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async -> FoundationModelAttemptOutcome<Value> {
+        let callerOutcome: CallerResponseDeadlineOutcome<FoundationModelGatedOperationOutcome<Value>> =
+            await CallerResponseDeadline.run(for: duration) {
+                try await gate.run(operation: operation)
+            }
+
+        switch callerOutcome {
+        case .success(.success(let value)):
+            return .success(value)
+        case .success(.busy):
+            return .busy
+        case .failure(let message):
+            return .failure(message)
+        case .timedOut:
+            return .timedOut
+        case .cancelled:
+            return .cancelled
+        }
     }
 }
 
