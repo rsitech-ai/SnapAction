@@ -49,7 +49,8 @@ public struct FoundationActionExtractor: ActionExtracting {
                     confidence: 1,
                     sourceText: request.document.normalizedText,
                     fields: [.extractedText: request.document.normalizedText],
-                    validationState: .warning(reason)
+                    validationState: .warning(reason),
+                    extractionProvenance: .deterministicFallback(.modelUnavailable)
                 )
             ]
         }

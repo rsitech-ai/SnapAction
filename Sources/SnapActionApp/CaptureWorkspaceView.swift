@@ -82,7 +82,7 @@ struct CaptureWorkspaceView: View {
 
             if presentation.showsModelFallbackNotice {
                 Label(
-                    "Apple Intelligence is unavailable, so only text and table extraction is available.",
+                    appState.modelFallbackNotice,
                     systemImage: "info.circle"
                 )
                 .font(.callout)

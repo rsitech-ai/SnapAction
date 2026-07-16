@@ -28,6 +28,28 @@ public extension ActionCandidate {
     }
 }
 
+public extension ExtractionProvenance {
+    var fallbackStatusText: String? {
+        switch self {
+        case .foundationModels:
+            nil
+        case .deterministicFallback(let reason):
+            switch reason {
+            case .modelUnavailable:
+                "Deterministic fallback active — Apple Intelligence is unavailable."
+            case .modelTimedOut:
+                "Deterministic fallback active — Apple Intelligence timed out."
+            case .modelFailed:
+                "Deterministic fallback active — Apple Intelligence extraction failed."
+            case .modelBusy:
+                "Deterministic fallback active — Apple Intelligence is still winding down."
+            case .modelReturnedNoCandidates:
+                "Deterministic fallback active — Apple Intelligence returned no actions."
+            }
+        }
+    }
+}
+
 public extension ValidationState {
     var displayTone: DisplayTone {
         switch self {

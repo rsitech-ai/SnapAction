@@ -56,11 +56,11 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         switch SystemLanguageModel.default.availability {
         case .available:
             guard await attemptGate.begin() else {
-                return try await fallback.extractCandidates(from: request).map { candidate in
-                    var copy = candidate
-                    copy.validationState = .warning("Apple Intelligence is still winding down; using deterministic text extraction.")
-                    return copy
-                }
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelBusy,
+                    warning: "Apple Intelligence is still winding down; using deterministic text extraction."
+                )
             }
 
             let outcome = await CallerResponseDeadline.run(for: .seconds(10)) {
@@ -84,20 +84,25 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
                     return candidates
                 }
             case .failure:
-                return try await fallback.extractCandidates(from: request).map { candidate in
-                    var copy = candidate
-                    copy.validationState = .warning("Apple Intelligence extraction failed; using deterministic text extraction.")
-                    return copy
-                }
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelFailed,
+                    warning: "Apple Intelligence extraction failed; using deterministic text extraction."
+                )
             case .timedOut:
-                return try await fallback.extractCandidates(from: request).map { candidate in
-                    var copy = candidate
-                    copy.validationState = .warning("Apple Intelligence took too long; using deterministic text extraction.")
-                    return copy
-                }
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelTimedOut,
+                    warning: "Apple Intelligence took too long; using deterministic text extraction."
+                )
             case .cancelled:
                 throw CancellationError()
             }
+            return try await deterministicFallback(
+                from: request,
+                reason: .modelReturnedNoCandidates,
+                warning: "Apple Intelligence returned no actions; using deterministic text extraction."
+            )
         case .unavailable(let reason):
             return [
                 ActionCandidate(
@@ -106,7 +111,8 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
                     confidence: 1,
                     sourceText: request.document.normalizedText,
                     fields: [.extractedText: request.document.normalizedText],
-                    validationState: .warning("Apple Intelligence unavailable: \(reason)")
+                    validationState: .warning("Apple Intelligence unavailable: \(reason)"),
+                    extractionProvenance: .deterministicFallback(.modelUnavailable)
                 )
             ]
         @unknown default:
@@ -114,7 +120,11 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         }
         #endif
 
-        return try await fallback.extractCandidates(from: request)
+        return try await deterministicFallback(
+            from: request,
+            reason: .modelUnavailable,
+            warning: "Apple Intelligence is unavailable; using deterministic text extraction."
+        )
     }
 
     static func availabilitySummary() -> String {
@@ -181,7 +191,8 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
             title: action.title,
             confidence: min(max(action.confidence, 0), 1),
             sourceText: action.sourceText,
-            fields: fields
+            fields: fields,
+            extractionProvenance: .foundationModels
         )
     }
 
@@ -196,6 +207,19 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         }
     }
     #endif
+
+    private func deterministicFallback(
+        from request: ActionExtractionRequest,
+        reason: DeterministicFallbackReason,
+        warning: String
+    ) async throws -> [ActionCandidate] {
+        try await fallback.extractCandidates(from: request).map { candidate in
+            var copy = candidate
+            copy.validationState = .warning(warning)
+            copy.extractionProvenance = .deterministicFallback(reason)
+            return copy
+        }
+    }
 }
 
 enum CallerResponseDeadlineOutcome<Value: Sendable>: Sendable {

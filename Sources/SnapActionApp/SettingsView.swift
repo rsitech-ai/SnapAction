@@ -40,7 +40,7 @@ struct SettingsView: View {
                         .multilineTextAlignment(.trailing)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text("SnapAction stays local-only. When Apple Intelligence is unavailable, only text/table extraction is suggested.")
+                Text("SnapAction stays local-only. If Apple Intelligence is unavailable, fails, or times out, deterministic text/table extraction remains available.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

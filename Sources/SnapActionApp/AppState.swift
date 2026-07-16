@@ -38,6 +38,7 @@ final class AppState {
     var modelStatus = "Checking Apple Intelligence..."
     var screenCaptureStatus = "Checking Screen Recording..."
     private(set) var modelFallbackActive = false
+    private(set) var activeExtractionProvenance: ExtractionProvenance?
     private var screenCaptureAllowed = false
     var eventKitStatus = "Calendar and Reminders permissions are requested on first write."
     var clipboardStatus = "No saved clipboard yet"
@@ -51,6 +52,8 @@ final class AppState {
     private let ocrService: VisionOCRService
     private let screenCaptureService: ScreenCaptureService
     private let hotkeyService: GlobalHotkeyService
+    private let modelAvailabilitySummary: @Sendable () -> String
+    private let modelIsAvailable: @Sendable () -> Bool
 
     init(
         workflow: CaptureWorkflow,
@@ -58,7 +61,9 @@ final class AppState {
         clipboardStore: ClipboardSnapshotStore,
         ocrService: VisionOCRService = VisionOCRService(),
         screenCaptureService: ScreenCaptureService = ScreenCaptureService(),
-        hotkeyService: GlobalHotkeyService = GlobalHotkeyService()
+        hotkeyService: GlobalHotkeyService = GlobalHotkeyService(),
+        modelAvailabilitySummary: @escaping @Sendable () -> String = LocalFoundationModelsExtractor.availabilitySummary,
+        modelIsAvailable: @escaping @Sendable () -> Bool = { LocalFoundationModelsExtractor.isAvailable }
     ) {
         self.workflow = workflow
         self.historyStore = historyStore
@@ -66,6 +71,8 @@ final class AppState {
         self.ocrService = ocrService
         self.screenCaptureService = screenCaptureService
         self.hotkeyService = hotkeyService
+        self.modelAvailabilitySummary = modelAvailabilitySummary
+        self.modelIsAvailable = modelIsAvailable
         refreshHistory()
         refreshClipboardSnapshot()
         refreshPermissionStatus()
@@ -117,6 +124,13 @@ final class AppState {
         )
     }
 
+    var modelFallbackNotice: String {
+        if let status = activeExtractionProvenance?.fallbackStatusText {
+            return status
+        }
+        return "Deterministic fallback active — \(modelStatus)."
+    }
+
     var processingLabel: String {
         processingStage.label
     }
@@ -141,6 +155,7 @@ final class AppState {
 
     func captureDemo() {
         guard processingStage.allowsNewOperation else { return }
+        beginExtraction()
         processingStage = .findingActions
         logger.info("Capture demo requested")
         let calendar = Calendar.current
@@ -163,6 +178,7 @@ final class AppState {
 
     func captureScreenSnapshot() {
         guard processingStage.allowsNewOperation else { return }
+        beginExtraction()
         processingStage = .readingCapture
         logger.info("Screen snapshot capture requested")
         Task {
@@ -189,6 +205,7 @@ final class AppState {
         panel.canChooseDirectories = false
         if panel.runModal() == .OK, let url = panel.url {
             guard processingStage.allowsNewOperation else { return }
+            beginExtraction()
             processingStage = .readingCapture
             Task {
                 defer { processingStage = .idle }
@@ -255,9 +272,14 @@ final class AppState {
     }
 
     func refreshPermissionStatus() {
-        modelStatus = LocalFoundationModelsExtractor.availabilitySummary()
+        if let fallbackStatus = activeExtractionProvenance?.fallbackStatusText {
+            modelStatus = fallbackStatus
+            modelFallbackActive = true
+        } else {
+            modelStatus = modelAvailabilitySummary()
+            modelFallbackActive = !modelIsAvailable()
+        }
         screenCaptureStatus = screenCaptureService.permissionSummary()
-        modelFallbackActive = !LocalFoundationModelsExtractor.isAvailable
         screenCaptureAllowed = screenCaptureService.hasPermission
     }
 
@@ -278,6 +300,7 @@ final class AppState {
             lastExecutionFeedback = nil
             currentDocument = session.document
             candidates = session.candidates
+            activeExtractionProvenance = session.candidates.compactMap(\.extractionProvenance).first
             selectedCandidateID = session.candidates.first?.id
             statusMessage = session.candidates.isEmpty ? "No actions found" : "Review suggested actions before confirming."
             refreshPermissionStatus()
@@ -286,6 +309,11 @@ final class AppState {
             logger.error("Extraction failed: \(error.localizedDescription, privacy: .public)")
             statusMessage = "Extraction failed: \(error.localizedDescription)"
         }
+    }
+
+    private func beginExtraction() {
+        activeExtractionProvenance = nil
+        refreshPermissionStatus()
     }
 
     private func refreshHistory() {
