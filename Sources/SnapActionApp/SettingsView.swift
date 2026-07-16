@@ -6,9 +6,9 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Capture") {
-                LabeledContent("Capture screen", value: "Command-Shift-1")
-                LabeledContent("Demo capture", value: "Command-Shift-2")
-                LabeledContent("Import image", value: "Command-Shift-I")
+                LabeledContent("Capture Screen", value: "Command-Shift-1")
+                LabeledContent("Demo Capture", value: "Command-Shift-2")
+                LabeledContent("Import Image", value: "Command-Shift-I")
                 LabeledContent("System writes", value: appState.eventKitStatus)
                 LabeledContent("Clipboard", value: appState.clipboardStatus)
                 HStack {

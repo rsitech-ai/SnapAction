@@ -8,135 +8,21 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView(appState: appState)
         } detail: {
-            ZStack {
-                AmbientSignalBackground()
-                DetailView(appState: appState)
-            }
+            DetailView(appState: appState)
         }
-        .searchable(text: Bindable(appState).historySearchText, prompt: "Search history")
         .toolbar {
             ToolbarItemGroup {
-                Button {
-                    appState.captureScreenSnapshot()
-                } label: {
+                Button(action: appState.captureScreenSnapshot) {
                     Label("Capture Screen", systemImage: "rectangle.dashed")
                 }
-                .accessibilityLabel("Capture Screen")
-                .help("Capture the screen")
-                Button {
-                    appState.captureDemo()
-                } label: {
-                    Label("Capture Demo", systemImage: "viewfinder")
-                }
-                .accessibilityLabel("Capture Demo")
-                .help("Run the sample capture")
-                Button {
-                    appState.importImageForOCR()
-                } label: {
+                .help("Capture the first display")
+
+                Button(action: appState.importImageForOCR) {
                     Label("Import Image", systemImage: "photo.badge.magnifyingglass")
                 }
-                .accessibilityLabel("Import Image")
-                .help("Import an image for OCR")
-                Button {
-                    appState.refreshPermissionStatus()
-                } label: {
-                    Label("Refresh Status", systemImage: "arrow.clockwise")
-                }
-                .accessibilityLabel("Refresh Status")
-                .help("Refresh permission and model status")
+                .help("Import an image for text recognition")
             }
         }
-    }
-}
-
-struct SidebarView: View {
-    let appState: AppState
-
-    var body: some View {
-        List {
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Capture", systemImage: "sparkles.rectangle.stack")
-                        .font(.headline)
-                    Text(appState.modelStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-                .padding(.vertical, 6)
-            }
-
-            Section("Suggested Actions") {
-                if appState.candidates.isEmpty {
-                    Text("No suggestions")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(appState.candidates) { candidate in
-                        CandidateSidebarRow(
-                            candidate: candidate,
-                            isSelected: appState.selectedCandidateID == candidate.id
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            withAnimation(.snappy(duration: 0.24)) {
-                                appState.selectedCandidateID = candidate.id
-                            }
-                        }
-                    }
-                }
-            }
-
-            Section("History") {
-                if appState.filteredHistory.isEmpty {
-                    Text("No history")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(appState.filteredHistory) { entry in
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(entry.candidates.first?.title ?? "Captured text")
-                                .lineLimit(1)
-                            Text(entry.result?.displayMessage ?? entry.capturedAt.formatted())
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .navigationTitle("SnapAction")
-    }
-}
-
-struct CandidateSidebarRow: View {
-    let candidate: ActionCandidate
-    let isSelected: Bool
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(candidate.validationState.displayTone.color.opacity(isSelected ? 0.20 : 0.10))
-                Image(systemName: candidate.kind.symbolName)
-                    .foregroundStyle(candidate.validationState.displayTone.color)
-            }
-            .frame(width: 28, height: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(candidate.title.isEmpty ? candidate.kind.displayName : candidate.title)
-                    .lineLimit(1)
-                Text(candidate.kind.displayName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 4)
-            Circle()
-                .fill(candidate.validationState.displayTone.color)
-                .frame(width: 7, height: 7)
-        }
-        .padding(.vertical, 5)
-        .scaleEffect(isSelected ? 1.015 : 1)
-        .animation(.smooth(duration: 0.2), value: isSelected)
     }
 }
 
@@ -385,11 +271,11 @@ struct EmptyReviewSurface: View {
                 Button {
                     appState.captureDemo()
                 } label: {
-                    Label("Demo", systemImage: "sparkles")
+                    Label("Demo Capture", systemImage: "sparkles")
                 }
                 .buttonStyle(.glass)
-                .accessibilityLabel("Demo")
-                .help("Run the sample capture")
+                .accessibilityLabel("Demo Capture")
+                .help("Run a demo capture")
             }
             ClipboardShelf(appState: appState)
         }
