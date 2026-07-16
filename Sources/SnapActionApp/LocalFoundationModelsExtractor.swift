@@ -101,6 +101,15 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         #endif
     }
 
+    static var isAvailable: Bool {
+        #if canImport(FoundationModels)
+        if case .available = SystemLanguageModel.default.availability {
+            return true
+        }
+        #endif
+        return false
+    }
+
     private static let instructions = """
     Extract only actions supported by SnapAction: reminders, calendar events, and text/table extraction.
     Use only facts present in the OCR text. Do not invent missing dates, names, or locations.

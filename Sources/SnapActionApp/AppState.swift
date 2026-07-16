@@ -73,6 +73,23 @@ final class AppState {
         return candidates.first { $0.id == selectedCandidateID } ?? candidates.first
     }
 
+    var modelFallbackActive: Bool {
+        !LocalFoundationModelsExtractor.isAvailable
+    }
+
+    var workspacePresentation: WorkspacePresentation {
+        WorkspacePresentation(
+            phase: .resolve(isProcessing: isProcessing, hasDocument: currentDocument != nil),
+            hasClipboardSnapshot: lastClipboardSnapshot != nil,
+            screenCaptureAllowed: screenCaptureService.hasPermission,
+            modelFallbackActive: modelFallbackActive
+        )
+    }
+
+    var processingLabel: String {
+        currentDocument == nil ? "Reading the capture" : "Finding safe actions"
+    }
+
     var filteredHistory: [HistoryEntry] {
         let query = historySearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return history }
