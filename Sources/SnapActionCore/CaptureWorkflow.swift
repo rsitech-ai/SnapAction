@@ -4,11 +4,18 @@ public struct CaptureSession: Equatable, Identifiable, Sendable {
     public var id: UUID
     public var document: OCRDocument
     public var candidates: [ActionCandidate]
+    public var extractionProvenance: ExtractionProvenance?
 
-    public init(id: UUID = UUID(), document: OCRDocument, candidates: [ActionCandidate]) {
+    public init(
+        id: UUID = UUID(),
+        document: OCRDocument,
+        candidates: [ActionCandidate],
+        extractionProvenance: ExtractionProvenance? = nil
+    ) {
         self.id = id
         self.document = document
         self.candidates = candidates
+        self.extractionProvenance = extractionProvenance ?? candidates.compactMap(\.extractionProvenance).first
     }
 }
 
@@ -40,10 +47,15 @@ public struct CaptureWorkflow: Sendable {
             localeIdentifier: localeIdentifier,
             timeZoneIdentifier: timeZoneIdentifier
         )
-        let candidates = try await extractor.extractCandidates(from: request)
+        let extraction = try await extractor.extractResult(from: request)
+        let candidates = extraction.candidates
             .map { validator.validated($0) }
             .prefix(3)
-        return CaptureSession(document: document, candidates: Array(candidates))
+        return CaptureSession(
+            document: document,
+            candidates: Array(candidates),
+            extractionProvenance: extraction.provenance
+        )
     }
 
     public func execute(

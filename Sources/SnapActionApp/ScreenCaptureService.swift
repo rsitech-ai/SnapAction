@@ -3,11 +3,12 @@ import Foundation
 import ScreenCaptureKit
 
 struct ScreenCaptureService: Sendable {
+    var hasPermission: Bool {
+        CGPreflightScreenCaptureAccess()
+    }
+
     func permissionSummary() -> String {
-        if CGPreflightScreenCaptureAccess() {
-            return "Screen Recording allowed"
-        }
-        return "Screen Recording needed"
+        hasPermission ? "Screen Recording allowed" : "Screen Recording needed"
     }
 
     func requestPermission() {

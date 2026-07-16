@@ -9,18 +9,41 @@ import SnapActionCore
 final class AppState {
     private let logger = Logger(subsystem: "com.s1kor.snapaction", category: "Workflow")
 
-    var currentDocument: OCRDocument?
-    var candidates: [ActionCandidate] = []
-    var selectedCandidateID: ActionCandidate.ID?
+    var currentDocument: OCRDocument? {
+        didSet {
+            if currentDocument != oldValue {
+                lastExecutionFeedback = nil
+            }
+        }
+    }
+    var candidates: [ActionCandidate] = [] {
+        didSet {
+            if candidates != oldValue {
+                lastExecutionFeedback = nil
+            }
+        }
+    }
+    var selectedCandidateID: ActionCandidate.ID? {
+        didSet {
+            if selectedCandidateID != oldValue {
+                lastExecutionFeedback = nil
+            }
+        }
+    }
     var history: [HistoryEntry] = []
     var lastClipboardSnapshot: ClipboardSnapshot?
-    var statusMessage = "Ready"
-    var isProcessing = false
+    private(set) var lastExecutionFeedback: CandidateExecutionFeedback?
+    private(set) var workflowFailure: WorkflowFailurePresentation?
+    private(set) var settingsErrorMessage: String?
+    private(set) var processingStage: ProcessingStage = .idle
     var modelStatus = "Checking Apple Intelligence..."
     var screenCaptureStatus = "Checking Screen Recording..."
+    private(set) var modelFallbackActive = false
+    private(set) var activeExtractionProvenance: ExtractionProvenance?
+    private var screenCaptureAllowed = false
     var eventKitStatus = "Calendar and Reminders permissions are requested on first write."
     var clipboardStatus = "No saved clipboard yet"
-    var historyRetentionDays = 30
+    private(set) var historyRetentionDays = 30
     var hotkeyDescription = "Command-Shift-1 capture, Command-Shift-2 demo, Command-Shift-I import"
     var historySearchText = ""
 
@@ -30,6 +53,9 @@ final class AppState {
     private let ocrService: VisionOCRService
     private let screenCaptureService: ScreenCaptureService
     private let hotkeyService: GlobalHotkeyService
+    private let modelAvailabilitySummary: @Sendable () -> String
+    private let modelIsAvailable: @Sendable () -> Bool
+    private let historyRetentionUpdater: @Sendable (Int) throws -> Void
 
     init(
         workflow: CaptureWorkflow,
@@ -37,7 +63,10 @@ final class AppState {
         clipboardStore: ClipboardSnapshotStore,
         ocrService: VisionOCRService = VisionOCRService(),
         screenCaptureService: ScreenCaptureService = ScreenCaptureService(),
-        hotkeyService: GlobalHotkeyService = GlobalHotkeyService()
+        hotkeyService: GlobalHotkeyService = GlobalHotkeyService(),
+        modelAvailabilitySummary: @escaping @Sendable () -> String = LocalFoundationModelsExtractor.availabilitySummary,
+        modelIsAvailable: @escaping @Sendable () -> Bool = { LocalFoundationModelsExtractor.isAvailable },
+        historyRetentionUpdater: (@Sendable (Int) throws -> Void)? = nil
     ) {
         self.workflow = workflow
         self.historyStore = historyStore
@@ -45,6 +74,12 @@ final class AppState {
         self.ocrService = ocrService
         self.screenCaptureService = screenCaptureService
         self.hotkeyService = hotkeyService
+        self.modelAvailabilitySummary = modelAvailabilitySummary
+        self.modelIsAvailable = modelIsAvailable
+        self.historyRetentionUpdater = historyRetentionUpdater ?? { days in
+            try historyStore.setRetentionDays(days)
+        }
+        self.historyRetentionDays = historyStore.retentionDays
         refreshHistory()
         refreshClipboardSnapshot()
         refreshPermissionStatus()
@@ -73,6 +108,40 @@ final class AppState {
         return candidates.first { $0.id == selectedCandidateID } ?? candidates.first
     }
 
+    var lastExecutionResult: ActionExecutionResult? {
+        guard let candidateID = selectedCandidate?.id else { return nil }
+        return executionResult(for: candidateID)
+    }
+
+    func executionResult(for candidateID: ActionCandidate.ID) -> ActionExecutionResult? {
+        guard lastExecutionFeedback?.candidateID == candidateID else { return nil }
+        return lastExecutionFeedback?.result
+    }
+
+    var isProcessing: Bool {
+        processingStage != .idle
+    }
+
+    var workspacePresentation: WorkspacePresentation {
+        WorkspacePresentation(
+            phase: .resolve(isProcessing: isProcessing, hasDocument: currentDocument != nil),
+            hasClipboardSnapshot: lastClipboardSnapshot != nil,
+            screenCaptureAllowed: screenCaptureAllowed,
+            modelFallbackActive: modelFallbackActive
+        )
+    }
+
+    var modelFallbackNotice: String {
+        if let status = activeExtractionProvenance?.fallbackStatusText {
+            return status
+        }
+        return "Deterministic fallback active — \(modelStatus)."
+    }
+
+    var processingLabel: String {
+        processingStage.label
+    }
+
     var filteredHistory: [HistoryEntry] {
         let query = historySearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return history }
@@ -92,6 +161,9 @@ final class AppState {
     }
 
     func captureDemo() {
+        guard processingStage.allowsNewOperation else { return }
+        beginExtraction()
+        processingStage = .findingActions
         logger.info("Capture demo requested")
         let calendar = Calendar.current
         let now = Date()
@@ -106,78 +178,126 @@ final class AppState {
         Ada | 10
         """
         Task {
-            await process(document: .singleBlock(sample))
+            defer { processingStage = .idle }
+            await resolveActions(in: .singleBlock(sample))
         }
     }
 
     func captureScreenSnapshot() {
+        guard processingStage.allowsNewOperation else { return }
+        beginExtraction()
+        processingStage = .readingCapture
         logger.info("Screen snapshot capture requested")
         Task {
-            isProcessing = true
-            defer { isProcessing = false }
+            defer { processingStage = .idle }
             do {
                 let image = try await screenCaptureService.captureFirstDisplayImage()
                 let document = try await ocrService.recognizeText(in: image)
-                await process(document: document)
+                processingStage = .findingActions
+                await resolveActions(in: document)
             } catch {
-                logger.error("Screen capture failed: \(error.localizedDescription, privacy: .public)")
-                statusMessage = "Screen Recording permission needed. Open Settings to continue."
                 refreshPermissionStatus()
+                if screenCaptureAllowed {
+                    logger.error("Screen capture workflow failed")
+                    workflowFailure = .capture(
+                        "SnapAction couldn’t capture and read the display. Try again."
+                    )
+                } else {
+                    logger.error("Screen capture blocked by Screen Recording access")
+                    workflowFailure = .capturePermission(
+                        "Allow Screen Recording access to capture the display."
+                    )
+                }
             }
         }
     }
 
     func importImageForOCR() {
+        guard processingStage.allowsNewOperation else { return }
         logger.info("Image import requested")
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         if panel.runModal() == .OK, let url = panel.url {
+            guard processingStage.allowsNewOperation else { return }
+            beginExtraction()
+            processingStage = .readingCapture
             Task {
-                await recognizeImage(at: url)
+                defer { processingStage = .idle }
+                do {
+                    let document = try await ocrService.recognizeText(in: url)
+                    processingStage = .findingActions
+                    await resolveActions(in: document)
+                } catch {
+                    logger.error("Imported image OCR failed")
+                    workflowFailure = .imageImport(
+                        "SnapAction couldn’t recognize text in the selected image. Choose another image and try again."
+                    )
+                }
             }
         }
     }
 
     func execute(candidate: ActionCandidate, editedTitle: String, confirmed: Bool) {
-        guard let document = currentDocument else { return }
+        guard processingStage.allowsNewOperation, let document = currentDocument else { return }
+        lastExecutionFeedback = nil
         logger.info("Action execution requested kind=\(candidate.kind.rawValue, privacy: .public) confirmed=\(confirmed, privacy: .public)")
-        var candidateToExecute = candidate
-        candidateToExecute.title = editedTitle
+        let candidateToExecute = CandidateReview.validated(candidate, editedTitle: editedTitle)
+        guard candidateToExecute.isExecutable else {
+            let result = ActionExecutionResult.failed(
+                message: CandidateReview.validationMessage(for: candidateToExecute)
+            )
+            storeExecutionFeedback(result, for: candidate.id, document: document)
+            logger.warning("Action execution blocked by edited candidate validation")
+            return
+        }
+        if let candidateIndex = candidates.firstIndex(where: { $0.id == candidate.id }) {
+            candidates[candidateIndex] = candidateToExecute
+        }
         let session = CaptureSession(document: document, candidates: candidates)
 
+        processingStage = confirmed ? .executingAction : .checkingConfirmation
         Task {
-            isProcessing = true
-            defer { isProcessing = false }
+            defer { processingStage = .idle }
             do {
                 let result = try await workflow.execute(candidateToExecute, confirmed: confirmed, in: session)
-                statusMessage = result.displayMessage
+                storeExecutionFeedback(result, for: candidate.id, document: document)
                 refreshHistory()
                 refreshClipboardSnapshot()
                 logger.info("Action execution finished result=\(result.displayMessage, privacy: .public)")
             } catch {
                 logger.error("Action execution failed: \(error.localizedDescription, privacy: .public)")
-                statusMessage = error.localizedDescription
+                let result = ActionExecutionResult.failed(message: error.localizedDescription)
+                storeExecutionFeedback(result, for: candidate.id, document: document)
             }
         }
     }
 
     func restoreSavedClipboard() {
         guard let snapshot = lastClipboardSnapshot else {
-            statusMessage = "No saved clipboard payload yet."
+            clipboardStatus = "No saved clipboard yet"
             return
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(snapshot.text, forType: .string)
-        statusMessage = "Clipboard restored: \(snapshot.title)"
         clipboardStatus = "Ready: \(snapshot.title)"
         logger.info("Clipboard restored from durable snapshot source=\(snapshot.source.rawValue, privacy: .public)")
     }
 
     func refreshPermissionStatus() {
-        modelStatus = LocalFoundationModelsExtractor.availabilitySummary()
+        if let fallbackStatus = activeExtractionProvenance?.fallbackStatusText {
+            modelStatus = fallbackStatus
+            modelFallbackActive = true
+        } else {
+            modelStatus = modelAvailabilitySummary()
+            modelFallbackActive = !modelIsAvailable()
+        }
         screenCaptureStatus = screenCaptureService.permissionSummary()
+        screenCaptureAllowed = screenCaptureService.hasPermission
+        if screenCaptureAllowed, workflowFailure?.kind == .capturePermission {
+            workflowFailure = nil
+        }
     }
 
     func requestScreenRecordingPermission() {
@@ -191,33 +311,59 @@ final class AppState {
         }
     }
 
-    private func recognizeImage(at url: URL) async {
-        isProcessing = true
-        defer { isProcessing = false }
+    func updateHistoryRetentionDays(_ days: Int) {
+        settingsErrorMessage = nil
         do {
-            let document = try await ocrService.recognizeText(in: url)
-            await process(document: document)
+            try historyRetentionUpdater(days)
+            historyRetentionDays = historyStore.retentionDays
+            refreshHistory()
         } catch {
-            logger.error("OCR failed: \(error.localizedDescription, privacy: .public)")
-            statusMessage = "OCR failed: \(error.localizedDescription)"
+            historyRetentionDays = historyStore.retentionDays
+            settingsErrorMessage = "Could not update history retention: \(error.localizedDescription)"
+            logger.error("History retention update failed")
         }
     }
 
-    private func process(document: OCRDocument) async {
-        isProcessing = true
-        defer { isProcessing = false }
+    func dismissSettingsError() {
+        settingsErrorMessage = nil
+    }
+
+    func dismissWorkflowFailure() {
+        workflowFailure = nil
+    }
+
+    func retryWorkflowFailure() {
+        guard let retryAction = workflowFailure?.retryAction else { return }
+        switch retryAction {
+        case .capture:
+            captureScreenSnapshot()
+        case .imageImport:
+            importImageForOCR()
+        }
+    }
+
+    private func resolveActions(in document: OCRDocument) async {
         do {
             let session = try await workflow.process(document: document)
+            lastExecutionFeedback = nil
             currentDocument = session.document
             candidates = session.candidates
+            workflowFailure = nil
+            activeExtractionProvenance = session.extractionProvenance
             selectedCandidateID = session.candidates.first?.id
-            statusMessage = session.candidates.isEmpty ? "No actions found" : "Review suggested actions before confirming."
             refreshPermissionStatus()
             logger.info("Document processed blocks=\(document.blocks.count, privacy: .public) candidates=\(session.candidates.count, privacy: .public)")
         } catch {
-            logger.error("Extraction failed: \(error.localizedDescription, privacy: .public)")
-            statusMessage = "Extraction failed: \(error.localizedDescription)"
+            logger.error("Action extraction failed")
+            workflowFailure = .extraction(
+                "SnapAction couldn’t create safe actions from the recognized text. Try another capture or image."
+            )
         }
+    }
+
+    private func beginExtraction() {
+        workflowFailure = nil
+        refreshPermissionStatus()
     }
 
     private func refreshHistory() {
@@ -231,6 +377,24 @@ final class AppState {
         } else {
             clipboardStatus = "No saved clipboard yet"
         }
+    }
+
+    private func storeExecutionFeedback(
+        _ result: ActionExecutionResult,
+        for candidateID: ActionCandidate.ID,
+        document: OCRDocument
+    ) {
+        guard currentDocument == document, selectedCandidate?.id == candidateID else { return }
+        lastExecutionFeedback = CandidateExecutionFeedback(candidateID: candidateID, result: result)
+    }
+}
+
+struct CandidateExecutionFeedback: Equatable, Sendable {
+    let candidateID: ActionCandidate.ID
+    let result: ActionExecutionResult
+
+    var accessibilityAnnouncement: String {
+        result.displayMessage
     }
 }
 

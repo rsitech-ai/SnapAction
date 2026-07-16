@@ -34,6 +34,19 @@ public enum ValidationState: Codable, Equatable, Sendable {
     case invalid(String)
 }
 
+public enum DeterministicFallbackReason: String, Codable, Equatable, Sendable {
+    case modelUnavailable
+    case modelTimedOut
+    case modelFailed
+    case modelBusy
+    case modelReturnedNoCandidates
+}
+
+public enum ExtractionProvenance: Codable, Equatable, Sendable {
+    case foundationModels
+    case deterministicFallback(DeterministicFallbackReason)
+}
+
 public struct ActionCandidate: Codable, Equatable, Identifiable, Sendable {
     public var id: UUID
     public var kind: ActionKind
@@ -42,6 +55,7 @@ public struct ActionCandidate: Codable, Equatable, Identifiable, Sendable {
     public var sourceText: String
     public var fields: [ActionField: String]
     public var validationState: ValidationState
+    public var extractionProvenance: ExtractionProvenance?
 
     public init(
         id: UUID = UUID(),
@@ -50,7 +64,8 @@ public struct ActionCandidate: Codable, Equatable, Identifiable, Sendable {
         confidence: Double,
         sourceText: String,
         fields: [ActionField: String],
-        validationState: ValidationState = .pending
+        validationState: ValidationState = .pending,
+        extractionProvenance: ExtractionProvenance? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -59,6 +74,7 @@ public struct ActionCandidate: Codable, Equatable, Identifiable, Sendable {
         self.sourceText = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.fields = fields.mapValues { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         self.validationState = validationState
+        self.extractionProvenance = extractionProvenance
     }
 }
 

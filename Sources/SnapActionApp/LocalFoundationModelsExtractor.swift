@@ -41,49 +41,91 @@ enum GeneratedSnapActionKind: Sendable {
 
 struct LocalFoundationModelsExtractor: ActionExtracting {
     private let fallback: any ActionExtracting
+    private let attemptGate: FoundationModelAttemptGate
 
-    init(fallback: any ActionExtracting) {
+    init(
+        fallback: any ActionExtracting,
+        attemptGate: FoundationModelAttemptGate = FoundationModelAttemptGate()
+    ) {
         self.fallback = fallback
+        self.attemptGate = attemptGate
     }
 
     func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
+        try await extractResult(from: request).candidates
+    }
+
+    func extractResult(from request: ActionExtractionRequest) async throws -> ActionExtractionResult {
         #if canImport(FoundationModels)
         switch SystemLanguageModel.default.availability {
         case .available:
-            do {
+            let outcome = await FoundationModelAttemptRunner.run(for: .seconds(10), gate: attemptGate) {
                 let session = LanguageModelSession(instructions: Instructions(Self.instructions))
                 let response = try await session.respond(
                     to: Prompt(Self.prompt(for: request)),
                     generating: GeneratedSnapActions.self
                 )
-                let candidates = response.content.actions.map(Self.convert(_:))
-                if !candidates.isEmpty {
-                    return candidates
-                }
-            } catch {
-                return try await fallback.extractCandidates(from: request).map { candidate in
-                    var copy = candidate
-                    copy.validationState = .warning("Apple Intelligence extraction failed; using deterministic text extraction.")
-                    return copy
-                }
+                return response.content.actions.map(Self.convert(_:))
             }
-        case .unavailable(let reason):
-            return [
-                ActionCandidate(
-                    kind: .textTable,
-                    title: "Extract text",
-                    confidence: 1,
-                    sourceText: request.document.normalizedText,
-                    fields: [.extractedText: request.document.normalizedText],
-                    validationState: .warning("Apple Intelligence unavailable: \(reason)")
+            switch outcome {
+            case .success(let candidates):
+                if !candidates.isEmpty {
+                    return ActionExtractionResult(
+                        candidates: candidates,
+                        provenance: .foundationModels
+                    )
+                }
+            case .failure:
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelFailed,
+                    warning: "Apple Intelligence extraction failed; using deterministic text extraction."
                 )
-            ]
+            case .timedOut:
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelTimedOut,
+                    warning: "Apple Intelligence took too long; using deterministic text extraction."
+                )
+            case .cancelled:
+                throw CancellationError()
+            case .busy:
+                return try await deterministicFallback(
+                    from: request,
+                    reason: .modelBusy,
+                    warning: "Apple Intelligence is still winding down; using deterministic text extraction."
+                )
+            }
+            return try await deterministicFallback(
+                from: request,
+                reason: .modelReturnedNoCandidates,
+                warning: "Apple Intelligence returned no actions; using deterministic text extraction."
+            )
+        case .unavailable(let reason):
+            return ActionExtractionResult(
+                candidates: [
+                    ActionCandidate(
+                        kind: .textTable,
+                        title: "Extract text",
+                        confidence: 1,
+                        sourceText: request.document.normalizedText,
+                        fields: [.extractedText: request.document.normalizedText],
+                        validationState: .warning("Apple Intelligence unavailable: \(reason)"),
+                        extractionProvenance: .deterministicFallback(.modelUnavailable)
+                    )
+                ],
+                provenance: .deterministicFallback(.modelUnavailable)
+            )
         @unknown default:
             break
         }
         #endif
 
-        return try await fallback.extractCandidates(from: request)
+        return try await deterministicFallback(
+            from: request,
+            reason: .modelUnavailable,
+            warning: "Apple Intelligence is unavailable; using deterministic text extraction."
+        )
     }
 
     static func availabilitySummary() -> String {
@@ -99,6 +141,15 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         #else
         return "Foundation Models framework unavailable"
         #endif
+    }
+
+    static var isAvailable: Bool {
+        #if canImport(FoundationModels)
+        if case .available = SystemLanguageModel.default.availability {
+            return true
+        }
+        #endif
+        return false
     }
 
     private static let instructions = """
@@ -141,7 +192,8 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
             title: action.title,
             confidence: min(max(action.confidence, 0), 1),
             sourceText: action.sourceText,
-            fields: fields
+            fields: fields,
+            extractionProvenance: .foundationModels
         )
     }
 
@@ -156,4 +208,185 @@ struct LocalFoundationModelsExtractor: ActionExtracting {
         }
     }
     #endif
+
+    private func deterministicFallback(
+        from request: ActionExtractionRequest,
+        reason: DeterministicFallbackReason,
+        warning: String
+    ) async throws -> ActionExtractionResult {
+        let candidates = try await fallback.extractCandidates(from: request).map { candidate in
+            var copy = candidate
+            copy.validationState = .warning(warning)
+            copy.extractionProvenance = .deterministicFallback(reason)
+            return copy
+        }
+        return ActionExtractionResult(
+            candidates: candidates,
+            provenance: .deterministicFallback(reason)
+        )
+    }
+}
+
+enum CallerResponseDeadlineOutcome<Value: Sendable>: Sendable {
+    case success(Value)
+    case failure(String)
+    case timedOut
+    case cancelled
+}
+
+extension CallerResponseDeadlineOutcome: Equatable where Value: Equatable {}
+
+enum CallerResponseDeadline {
+    static func run<Value: Sendable>(
+        for duration: Duration,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async -> CallerResponseDeadlineOutcome<Value> {
+        let state = CallerResponseDeadlineState<Value>()
+
+        return await withTaskCancellationHandler {
+            if Task.isCancelled {
+                await state.resolve(.cancelled)
+                return .cancelled
+            }
+
+            let operationTask = Task {
+                do {
+                    await state.resolve(.success(try await operation()))
+                } catch is CancellationError {
+                    await state.resolve(.cancelled)
+                } catch {
+                    await state.resolve(.failure(error.localizedDescription))
+                }
+            }
+            let timeoutTask = Task {
+                do {
+                    try await Task.sleep(for: duration)
+                    await state.resolve(.timedOut)
+                } catch {
+                    // The operation or parent caller completed first.
+                }
+            }
+
+            await state.install(operationTask: operationTask, timeoutTask: timeoutTask)
+            let outcome = await state.result()
+            await state.cancelPendingTasks()
+            return outcome
+        } onCancel: {
+            Task {
+                await state.cancelAndResolve()
+            }
+        }
+    }
+}
+
+actor FoundationModelAttemptGate {
+    private var attemptIsActive = false
+    private var idleContinuations: [CheckedContinuation<Void, Never>] = []
+
+    func run<Value: Sendable>(
+        operation: @escaping @Sendable () async throws -> Value
+    ) async throws -> FoundationModelGatedOperationOutcome<Value> {
+        try Task.checkCancellation()
+        guard !attemptIsActive else { return .busy }
+        attemptIsActive = true
+        defer { finish() }
+        return .success(try await operation())
+    }
+
+    func waitUntilIdle() async {
+        guard attemptIsActive else { return }
+        await withCheckedContinuation { continuation in
+            idleContinuations.append(continuation)
+        }
+    }
+
+    private func finish() {
+        attemptIsActive = false
+        idleContinuations.forEach { $0.resume() }
+        idleContinuations.removeAll()
+    }
+}
+
+enum FoundationModelGatedOperationOutcome<Value: Sendable>: Sendable {
+    case success(Value)
+    case busy
+}
+
+enum FoundationModelAttemptOutcome<Value: Sendable>: Sendable {
+    case success(Value)
+    case failure(String)
+    case timedOut
+    case cancelled
+    case busy
+}
+
+extension FoundationModelAttemptOutcome: Equatable where Value: Equatable {}
+
+enum FoundationModelAttemptRunner {
+    static func run<Value: Sendable>(
+        for duration: Duration,
+        gate: FoundationModelAttemptGate,
+        operation: @escaping @Sendable () async throws -> Value
+    ) async -> FoundationModelAttemptOutcome<Value> {
+        let callerOutcome: CallerResponseDeadlineOutcome<FoundationModelGatedOperationOutcome<Value>> =
+            await CallerResponseDeadline.run(for: duration) {
+                try await gate.run(operation: operation)
+            }
+
+        switch callerOutcome {
+        case .success(.success(let value)):
+            return .success(value)
+        case .success(.busy):
+            return .busy
+        case .failure(let message):
+            return .failure(message)
+        case .timedOut:
+            return .timedOut
+        case .cancelled:
+            return .cancelled
+        }
+    }
+}
+
+private actor CallerResponseDeadlineState<Value: Sendable> {
+    private var outcome: CallerResponseDeadlineOutcome<Value>?
+    private var continuation: CheckedContinuation<CallerResponseDeadlineOutcome<Value>, Never>?
+    private var operationTask: Task<Void, Never>?
+    private var timeoutTask: Task<Void, Never>?
+
+    func install(operationTask: Task<Void, Never>, timeoutTask: Task<Void, Never>) {
+        guard outcome == nil else {
+            operationTask.cancel()
+            timeoutTask.cancel()
+            return
+        }
+        self.operationTask = operationTask
+        self.timeoutTask = timeoutTask
+    }
+
+    func resolve(_ newOutcome: CallerResponseDeadlineOutcome<Value>) {
+        guard outcome == nil else { return }
+        outcome = newOutcome
+        continuation?.resume(returning: newOutcome)
+        continuation = nil
+    }
+
+    func result() async -> CallerResponseDeadlineOutcome<Value> {
+        if let outcome {
+            return outcome
+        }
+        return await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func cancelAndResolve() {
+        resolve(.cancelled)
+        cancelPendingTasks()
+    }
+
+    func cancelPendingTasks() {
+        operationTask?.cancel()
+        timeoutTask?.cancel()
+    }
 }

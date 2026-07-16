@@ -34,10 +34,41 @@ import Testing
     #expect(entries[0].result == result)
 }
 
+@Test func captureWorkflowPreservesProvenanceWhenExtractionReturnsNoCandidates() async throws {
+    let historyURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString)
+        .appendingPathExtension("json")
+    let history = try HistoryStore(fileURL: historyURL)
+    let workflow = CaptureWorkflow(
+        extractor: EmptyFallbackResultExtractor(),
+        validator: ActionValidator(),
+        executor: FakeActionExecutor(),
+        historyStore: history
+    )
+
+    let session = try await workflow.process(document: .singleBlock(""))
+
+    #expect(session.candidates.isEmpty)
+    #expect(session.extractionProvenance == .deterministicFallback(.modelTimedOut))
+}
+
 private struct StaticExtractor: ActionExtracting {
     let candidates: [ActionCandidate]
 
     func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
         candidates
+    }
+}
+
+private struct EmptyFallbackResultExtractor: ActionExtracting {
+    func extractCandidates(from request: ActionExtractionRequest) async throws -> [ActionCandidate] {
+        []
+    }
+
+    func extractResult(from request: ActionExtractionRequest) async throws -> ActionExtractionResult {
+        ActionExtractionResult(
+            candidates: [],
+            provenance: .deterministicFallback(.modelTimedOut)
+        )
     }
 }
