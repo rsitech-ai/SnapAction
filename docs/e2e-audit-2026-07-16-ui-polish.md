@@ -17,7 +17,7 @@ Computer Use interactions were performed exclusively through the `node_repl` `@o
 
 | Check | Command / tool | Result | Evidence |
 | --- | --- | --- | --- |
-| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 35 tests | Terminal output; final fresh count is recorded in the verification section below |
+| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 36 tests | Terminal output; final fresh count is recorded in the verification section below |
 | Build | `swift build` | Passed | Terminal output |
 | Bundle launch | `script/build_and_run.sh --verify`; `pgrep -x SnapAction` | Passed; launched the worktree bundle, not the original checkout | Process path `/Users/s1kor/dev/andrzej/SnapAction/.worktrees/ui-ux-polish/dist/SnapAction.app/Contents/MacOS/SnapAction` |
 | Native UI | Computer Use through `node_repl` + `@oai/sky` | Real AX state read after each interaction | Scenario matrix below |
@@ -48,7 +48,7 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 | Fresh bundle | Build, verify launch, process path | Worktree `.app` built and launched; process proof passed | Verified |
 | Empty workspace | First/relaunch state | Capture-first hierarchy, local-processing note, permission recovery, history, and conditional clipboard restore were readable and unclipped | Verified |
 | Empty workspace | Import Image cancel | Open panel appeared and Cancel returned without state loss | Verified |
-| Empty workspace | Demo Capture | Initially remained indefinitely from the caller's perspective. `cb7190f` now bounds caller response, propagates cancellation, and prevents overlapping model attempts without claiming forced termination of cancellation-insensitive in-process work. Two post-hardening live reruns completed Foundation Models before the deadline. | Verified with split live/test evidence |
+| Empty workspace | Demo Capture | Initially remained indefinitely from the caller's perspective. `cb7190f` bounds caller response; `27ad7d8` scopes gate acquisition and `defer` cleanup to the actual model operation, including pre-cancelled callers, while preventing overlap without claiming forced termination. Two live reruns completed Foundation Models before the deadline. | Verified with split live/test evidence |
 | Processing | Demo progress | Honest `Finding safe actions` progress state shown; no duplicate operation accepted | Verified |
 | Toolbar | Capture Screen | Permission denial returned to explicit Screen Recording recovery without a prompt acceptance or setting change | Verified |
 | Toolbar / shortcut | Import Image and Command-Shift-I cancel | Native Open panel appeared and cancelled safely; one toolbar attempt also exposed a transient Computer Use pipe failure, resolved by relaunch | Verified with tool caveat |
@@ -82,7 +82,7 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 
 | Severity | Finding | Root-cause proof | Fix | Re-verification |
 | --- | --- | --- | --- | --- |
-| High | Demo Capture could remain indefinitely in `Finding safe actions` from the caller's perspective | Reproduced for more than one minute; process sample showed active FoundationModels/TokenGeneration work; extractor awaited it without a response deadline | `0d44b6e` introduced fallback; `cb7190f fix: bound model caller response` adds parent-cancellation propagation and a single-flight gate held until any surviving model attempt winds down | 4 deterministic deadline/cancellation/single-flight tests, full suite, rebuild; two post-hardening live Demo runs completed the model success path before the deadline |
+| High | Demo Capture could remain indefinitely in `Finding safe actions` from the caller's perspective | Reproduced for more than one minute; process sample showed active FoundationModels/TokenGeneration work; extractor awaited it without a response deadline | `0d44b6e` introduced fallback; `cb7190f` adds caller cancellation; `27ad7d8 fix: scope model attempt gate ownership` acquires inside the actual operation, checks cancellation first, maps typed busy, and uses `defer` cleanup | 5 deterministic deadline/cancellation/pre-cancellation/single-flight tests, full suite, rebuild; two live Demo runs completed the model success path before the deadline |
 | High | Fallback truth was erased by validation and then hidden by an availability-only AppState refresh | Timeout/failure copy lived in `ValidationState`; `ActionValidator` replaced that field and `refreshPermissionStatus()` reset the UI to availability | `e409463 fix: surface deterministic fallback provenance` adds a backward-compatible typed provenance field and reason-specific app presentation | Legacy decode, validator/edit preservation, exact copy, full AppState presentation, and new-extraction clearing tests; current live runtime completed the model path, so no artificial timeout was induced |
 | High | Whitespace title left Copy Text enabled and could reach the executor | AX tree showed an enabled Copy Text button after setting title to whitespace; UI used the original candidate validation | `723392c fix: keep edited actions consistent` revalidates edited titles in UI and at the app-state boundary | Focused red/green tests; AX now shows disabled button, explicit reason, and no executor call |
 | High | Confirmed edited title reverted in editor/current candidate/history | Real Copy Text saved the edited snapshot title but AX immediately showed original title and history row | Same `723392c` updates the active candidate before constructing the persisted session | Red/green persistence test and real Copy Text show `Verified edited title persists` across candidate, field, snapshot, and history |
@@ -117,10 +117,10 @@ The built app, capture-denied recovery, bounded caller response, live multi-cand
 ### Fresh completion gate
 
 - `git diff --check` — passed.
-- `swift test` — 35 tests passed, 0 failures.
+- `swift test` — 36 tests passed, 0 failures.
 - `swift build` — passed.
-- `script/build_and_run.sh --verify` — exit 0; its nested 35-test run passed.
-- `pgrep -x SnapAction` — PID `36442` at the final remediation gate.
+- `script/build_and_run.sh --verify` — exit 0; its nested 36-test run passed.
+- `pgrep -x SnapAction` — PID `16614` at the final remediation gate.
 - `ps` — executable was the worktree bundle at `/Users/s1kor/dev/andrzej/SnapAction/.worktrees/ui-ux-polish/dist/SnapAction.app/Contents/MacOS/SnapAction`.
 - Pre-commit `git status --short` — only the two updated docs and the review-hardening reflection were intentional tracked/untracked changes; `.artifacts` and `.superpowers` remained ignored.
 
