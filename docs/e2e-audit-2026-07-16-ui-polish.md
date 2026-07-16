@@ -17,7 +17,7 @@ Computer Use interactions were performed exclusively through the `node_repl` `@o
 
 | Check | Command / tool | Result | Evidence |
 | --- | --- | --- | --- |
-| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 42 tests | Terminal output; final fresh count is recorded in the verification section below |
+| Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 46 tests | Terminal output; final fresh count is recorded in the verification section below |
 | Build | `swift build` | Passed | Terminal output |
 | Bundle launch | `script/build_and_run.sh --verify`; process-path inspection | Passed in the implementation worktree and again after fast-forwarding the primary feature branch | Final process path `/Users/s1kor/dev/andrzej/SnapAction/dist/SnapAction.app/Contents/MacOS/SnapAction` |
 | Native UI | Computer Use through `node_repl` + `@oai/sky` | Real AX state read after each interaction | Scenario matrix below |
@@ -96,6 +96,9 @@ Screenshots are intentionally gitignored under `.artifacts/ui-polish-2026-07-16/
 | Important | Workflow errors were written to dead `statusMessage` state and never rendered after StatusStrip removal | AppState catches mutated `statusMessage`, while no current view read it | `9b105ce fix: surface workflow failures` removes the dead state, adds typed capture-permission/capture/image-import/extraction presentation, and renders a shared dismissible banner in visible phase content | Four AppState failure/clearing tests, typed presentation semantics, two real invalid-image paths, retry/dismiss interaction, and matching AX/pixel evidence |
 | Important | A failed replacement preserved stale review content but prematurely erased its deterministic-fallback disclosure | `beginExtraction()` cleared provenance before the replacement had produced a successful session | `a3fe558 fix: preserve stale extraction provenance` makes successful resolution the provenance commit point | Focused pending-success and failed-replacement tests prove stale candidate/provenance/disclosure persistence and correct successful replacement |
 | Polish | Screen Recording recovery could stay stale after permission was granted in System Settings | Scene activation refreshed permission state, but failure cleanup existed only in the in-app Request Access action | `a3fe558` centralizes permission-failure cleanup inside `refreshPermissionStatus()` | Scene activation and Request Access now share the same cleanup path; full suite and bundle verification pass |
+| Important | A zero-candidate deterministic fallback lost its timeout/failure provenance | Provenance was stored only on candidates, so an empty candidate array had no carrier into `CaptureSession` or AppState | `940fdaa fix: close PR review findings` adds an extraction-result/session provenance boundary independent of candidate count | Core workflow and AppState regressions prove a zero-candidate timeout remains visible and contextual |
+| Important | Retention kept one extra calendar date | The cutoff subtracted the full retention count and included that date, so 1 retained today plus yesterday | `940fdaa` changes the inclusive cutoff to `1 - retentionDays` | Focused 1-day and 30-day boundary tests prove exactly N retained calendar dates |
+| Polish | Execution results were visible but not explicitly announced to assistive technologies | Candidate feedback was inserted as a label after an asynchronous processing phase without an announcement notification | `940fdaa` posts the candidate-bound result through `AccessibilityNotification.Announcement`, including the initial recreated review state | Announcement-copy regression and full build pass; a live VoiceOver navigation session remains a separate runtime gate |
 | Polish | Healthy model status occupied sidebar space, and retention copy described metadata instead of history | Healthy launch AX always showed a redundant model row; retention promise was broader than the label | `9b105ce` makes the model section conditional on fallback and changes copy to `Retain history for N day(s)` | Semantics tests plus healthy launch AX with no Model row |
 
 ## Strict motion review
@@ -125,9 +128,9 @@ The built app, capture-denied recovery, bounded caller response, live multi-cand
 ### Fresh completion gate
 
 - `git diff --check` — passed.
-- `swift test` — 42 tests passed, 0 failures.
+- `swift test` — 46 tests passed, 0 failures.
 - `swift build` — passed.
-- `script/build_and_run.sh --verify` — exit 0; its nested 42-test run passed.
+- `script/build_and_run.sh --verify` — exit 0; its nested 46-test run passed.
 - `pgrep` / `ps` — PID `36312` at the final primary-checkout gate.
 - `ps` — executable was the primary feature-branch bundle at `/Users/s1kor/dev/andrzej/SnapAction/dist/SnapAction.app/Contents/MacOS/SnapAction`.
 - Pre-commit `git status --short` — only the updated audit, production plan, and review-hardening reflection were intentional tracked changes; `.artifacts` and `.superpowers` remained ignored.
