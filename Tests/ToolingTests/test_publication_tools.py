@@ -314,6 +314,45 @@ jobs:
             issues,
         )
 
+    def test_codeql_permission_exception_is_limited_to_the_containing_job(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import workflow_policy_issues
+        finally:
+            sys.path.pop(0)
+
+        workflow_with_unrelated_privileged_job = """
+name: mixed jobs
+on: [push]
+permissions:
+  contents: read
+jobs:
+  unrelated:
+    permissions:
+      security-events: write
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo unrelated
+  codeql:
+    permissions:
+      contents: read
+      security-events: write
+    runs-on: macos-26
+    steps:
+      - name: Analyze
+        uses: github/codeql-action/analyze@99df26d4f13ea111d4ec1a7dddef6063f76b97e9 # v4.37.0
+"""
+
+        issues = workflow_policy_issues(
+            Path(".github/workflows/mixed.yml"),
+            workflow_with_unrelated_privileged_job,
+        )
+        self.assertIn(
+            "JOB_WRITE_PERMISSION_FORBIDDEN",
+            {issue.code for issue in issues},
+            issues,
+        )
+
     def test_codeql_manual_build_mode_is_explicit(self):
         codeql_workflow = (REPO_ROOT / ".github/workflows/codeql.yml").read_text(encoding="utf-8")
 

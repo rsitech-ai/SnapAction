@@ -133,6 +133,23 @@ def _declared_triggers(content: str) -> set[str]:
 def _job_permission_issues(relative_path: str, content: str) -> list[PolicyIssue]:
     issues: list[PolicyIssue] = []
     lines = content.splitlines()
+
+    def containing_job_content(line_index: int) -> str:
+        job_start: int | None = None
+        for candidate in range(line_index - 1, -1, -1):
+            if re.fullmatch(r"  [A-Za-z0-9_.-]+:\s*", lines[candidate]):
+                job_start = candidate
+                break
+        if job_start is None:
+            return ""
+        job_end = len(lines)
+        for candidate in range(job_start + 1, len(lines)):
+            nested = lines[candidate]
+            if nested.strip() and len(nested) - len(nested.lstrip()) <= 2:
+                job_end = candidate
+                break
+        return "\n".join(lines[job_start:job_end])
+
     for index, line in enumerate(lines):
         block = re.fullmatch(r"(\s+)permissions:\s*", line)
         inline = re.fullmatch(r"(\s+)permissions:\s*\{([^}]*)\}\s*", line)
@@ -159,8 +176,13 @@ def _job_permission_issues(relative_path: str, content: str) -> list[PolicyIssue
                 if match:
                     permissions.append((match.group(1), match.group(2)))
 
+        job_content = containing_job_content(index)
+        approved_codeql_analyze = (
+            "github/codeql-action/analyze@"
+            f"{VERIFIED_ACTION_REVISIONS['github/codeql-action']}"
+        )
         for scope, access in permissions:
-            if access == "write" and scope == "security-events" and "github/codeql-action/analyze@" in content:
+            if access == "write" and scope == "security-events" and approved_codeql_analyze in job_content:
                 continue
             if access in {"write", "write-all"}:
                 issues.append(
