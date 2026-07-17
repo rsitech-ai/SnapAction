@@ -39,15 +39,15 @@
 - Visual style: Quiet Focus hierarchy with Warm Signals, semantic system colors, restrained surfaces, native sidebar density, and Liquid Glass only on the primary confirmation control.
 - Motion rules: Crisp Response with no custom idle or repeated animation. The 2026-07-16 strict source review found no custom animation call sites; native controls own system-respecting transitions.
 - Accessibility requirements: icon controls expose labels/help, confirmation explains disabled validation, execution results post `AccessibilityNotification.Announcement`, OCR is selectable monospaced text, surfaces respond to Reduce Transparency and increased contrast, and primary actions are available by toolbar/menu/keyboard. Runtime Light/contrast/transparency/Reduce Motion variants and a full VoiceOver navigation pass remain release gates.
-- Empty/loading/error/offline/permission states: implemented for capture/import/extraction/write failures; App Store purpose strings deferred until Xcode bundle packaging.
+- Empty/loading/error/offline/permission states: implemented for capture/import/extraction/write failures; the local bundle now includes exact Screen Capture, Calendar write-only, and Reminder full-access purpose strings.
 
 ## Test Strategy
 
 - Unit tests: OCR ordering, action validation, bounded model caller response, parent cancellation, single-flight model attempts, candidate-independent fallback provenance, typed fallback and workflow-failure presentation, legacy decode, edited-title validation/persistence, AI unavailable fallback, exact-N-calendar-date retention pruning/persistence, accessibility announcement copy, history privacy/corrupt recovery, durable clipboard snapshot, and workflow execution gates.
 - Integration tests or mocks: fake extractor/executor workflow and file-backed stores.
 - UI/manual smoke: native Computer Use pass covers the capture-first shell, capture denial, import cancel, Demo processing/review, edited-title validation, Copy Text, clipboard restore, history search, Settings 1...90 boundaries, toolbar/menu/shortcuts, sidebar/review resizing, keyboard focus, zoomed large layout, relaunch persistence, and subsystem telemetry. See `docs/e2e-audit-2026-07-16-ui-polish.md`.
-- Release smoke: SwiftPM `.app` launch only; signed/notarized archive deferred.
-- Commands: `swift test`, `swift build`, `./script/build_and_run.sh --verify`.
+- Release smoke: SwiftPM `.app` launch with strict ad-hoc signature verification; Developer ID/App Store signing and notarization remain deferred.
+- Commands: `swift test`, `swift build -c release`, `swift test --sanitize=thread`, `./script/test_bundle_metadata.sh`, `./script/build_and_run.sh --verify`.
 
 ## Observability
 
@@ -66,7 +66,7 @@
 - Assets: app icon/screenshots not created.
 - Metadata: not created.
 - Review notes: permission use and local-only AI behavior need final wording.
-- Known blockers: Xcode app target or package-to-bundle release pipeline, signing, sandbox entitlements, Info.plist usage strings, privacy manifest, app icon, App Store metadata.
+- Known blockers: Xcode app target or package-to-bundle release pipeline, Developer ID/App Store signing, sandbox entitlements, privacy manifest, app icon, App Store metadata, and notarization. Local Info.plist usage strings are now verified.
 - UI verification blockers: owner-granted Screen Recording; Calendar/Reminder permission and write proof; large-OCR fixture; naturally reached live Foundation Models timeout/failure presentation; live Light/Reduce Motion/Reduce Transparency/increased-contrast/VoiceOver matrix; MenuBarExtra and minimum-window automation with a stronger AX driver. Image-import failure presentation is now live-verified in empty and stale-review states.
 
 ## Iteration Log
@@ -80,3 +80,5 @@
 | 2026-07-16 | UI/UX | Rebuilt the shell around capture-first Quiet Focus, contextual recovery, adjustable OCR/review workspace, Warm Signals, and typed confirmation feedback. | Real worktree `.app` screenshots and native interaction matrix in `docs/e2e-audit-2026-07-16-ui-polish.md`. | Runtime appearance/accessibility variants and external permissions remain. |
 | 2026-07-16 | Runtime correctness | Bounded Foundation Models caller response with cancellation propagation and scoped single-flight ownership; added candidate-independent typed transactional fallback provenance and visible typed workflow failures; revalidated/persisted edited titles; clarified no-match history; persisted and enforced exact 1...90-calendar-date retention. | 46-test SwiftPM suite; repeated rebuild/relaunch; two real model-success Demo runs; live candidate switching; failed and zero-candidate replacement paths preserve fallback disclosure; exact 1/30-day cutoff tests; real retention 1/90/30 plus relaunch; invalid-image failure in empty and stale-review phases with retry/dismiss proof. | Add app-local QA fixtures for model timeout/failure, long OCR, and appearance/accessibility states. |
 | 2026-07-16 | Observability | Captured live `com.s1kor.snapaction` telemetry during denied capture and clipboard restore. | `.artifacts/ui-polish-2026-07-16/telemetry-subsystem.log`; no OCR or clipboard payload appeared. | Add release performance/idle profile before release-candidate claims. |
+| 2026-07-17 | Privacy/package integrity | Added exact Screen Capture, Calendar write-only, and Reminder purpose strings; changed Calendar access to write-only; completed and strictly verified the local ad-hoc bundle signature. | `script/test_bundle_metadata.sh`; `codesign --verify --deep --strict`; official Apple documentation cross-check. | Developer ID/App Store signing, sandboxing, privacy manifest, and notarization remain external release gates. |
+| 2026-07-17 | Runtime/persistence hardening | Disabled competing operation entry points while busy, secured history/retention/clipboard files to `0600`, surfaced pasteboard/snapshot failures, failed closed into a visible startup state when durable storage cannot initialize, removed payload-bearing public logs, and replaced the fixed launch sleep with bounded polling. | 52 tests; release build; Thread Sanitizer; packaged-app Demo, denied capture, import cancel, search, settings, Copy/Restore, full-screen, relaunch, telemetry, and hash/mode assertions. | Owner-controlled Screen Recording and disposable EventKit write proof remain. |

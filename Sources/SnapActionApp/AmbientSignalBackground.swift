@@ -29,17 +29,3 @@ struct WarmSignalBackdrop: View {
         .accessibilityHidden(true)
     }
 }
-
-struct ConfidenceGauge: View {
-    let value: Double
-    let tone: Color
-
-    var body: some View {
-        Gauge(value: min(max(value, 0), 1)) {
-            EmptyView()
-        }
-        .gaugeStyle(.accessoryCircularCapacity)
-        .tint(tone)
-        .frame(width: 44, height: 44)
-    }
-}

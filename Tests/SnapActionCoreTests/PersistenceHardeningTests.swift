@@ -54,3 +54,29 @@ import Testing
     #expect(recovered.isEmpty)
     #expect(reloaded.count == 1)
 }
+
+@Test func persistenceFilesAreRestrictedToTheCurrentUser() throws {
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SnapActionPersistencePermissions-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let historyURL = directory.appendingPathComponent("history.json")
+    let clipboardURL = directory.appendingPathComponent("clipboard.json")
+    let historyStore = try HistoryStore(fileURL: historyURL)
+    let clipboardStore = try ClipboardSnapshotStore(fileURL: clipboardURL)
+
+    try historyStore.setRetentionDays(30)
+    try clipboardStore.save(
+        ClipboardSnapshot(title: "Private payload", text: "Local-only text", source: .textTable)
+    )
+
+    let retentionURL = historyURL.deletingPathExtension().appendingPathExtension("retention.json")
+    #expect(try posixPermissions(at: historyURL) == 0o600)
+    #expect(try posixPermissions(at: retentionURL) == 0o600)
+    #expect(try posixPermissions(at: clipboardURL) == 0o600)
+}
+
+private func posixPermissions(at url: URL) throws -> Int {
+    let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+    return try #require(attributes[.posixPermissions] as? Int)
+}

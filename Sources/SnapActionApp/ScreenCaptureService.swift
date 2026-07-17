@@ -15,15 +15,6 @@ struct ScreenCaptureService: Sendable {
         _ = CGRequestScreenCaptureAccess()
     }
 
-    func verifyShareableContent() async -> String {
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-            return "ScreenCaptureKit sees \(content.displays.count) display(s)."
-        } catch {
-            return "ScreenCaptureKit unavailable: \(error.localizedDescription)"
-        }
-    }
-
     func captureFirstDisplayImage() async throws -> CGImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first else {

@@ -27,12 +27,9 @@ import Testing
         validationState: .invalid("Calendar events need a start date.")
     )
 
-    #expect(validCandidate.confidenceBand == .high)
     #expect(validCandidate.isExecutable)
     #expect(validCandidate.validationState.displayTone == .success)
-    #expect(warningCandidate.confidenceBand == .medium)
     #expect(warningCandidate.validationState.displayTone == .warning)
-    #expect(invalidCandidate.confidenceBand == .low)
     #expect(!invalidCandidate.isExecutable)
     #expect(invalidCandidate.validationState.displayTone == .danger)
 }

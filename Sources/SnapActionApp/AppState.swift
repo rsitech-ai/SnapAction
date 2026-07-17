@@ -44,7 +44,6 @@ final class AppState {
     var eventKitStatus = "Calendar and Reminders permissions are requested on first write."
     var clipboardStatus = "No saved clipboard yet"
     private(set) var historyRetentionDays = 30
-    var hotkeyDescription = "Command-Shift-1 capture, Command-Shift-2 demo, Command-Shift-I import"
     var historySearchText = ""
 
     private let workflow: CaptureWorkflow
@@ -56,6 +55,7 @@ final class AppState {
     private let modelAvailabilitySummary: @Sendable () -> String
     private let modelIsAvailable: @Sendable () -> Bool
     private let historyRetentionUpdater: @Sendable (Int) throws -> Void
+    private let clipboardWriter: @MainActor @Sendable (String) -> Bool
 
     init(
         workflow: CaptureWorkflow,
@@ -66,7 +66,8 @@ final class AppState {
         hotkeyService: GlobalHotkeyService = GlobalHotkeyService(),
         modelAvailabilitySummary: @escaping @Sendable () -> String = LocalFoundationModelsExtractor.availabilitySummary,
         modelIsAvailable: @escaping @Sendable () -> Bool = { LocalFoundationModelsExtractor.isAvailable },
-        historyRetentionUpdater: (@Sendable (Int) throws -> Void)? = nil
+        historyRetentionUpdater: (@Sendable (Int) throws -> Void)? = nil,
+        clipboardWriter: @escaping @MainActor @Sendable (String) -> Bool = AppState.writeToPasteboard
     ) {
         self.workflow = workflow
         self.historyStore = historyStore
@@ -79,6 +80,7 @@ final class AppState {
         self.historyRetentionUpdater = historyRetentionUpdater ?? { days in
             try historyStore.setRetentionDays(days)
         }
+        self.clipboardWriter = clipboardWriter
         self.historyRetentionDays = historyStore.retentionDays
         refreshHistory()
         refreshClipboardSnapshot()
@@ -86,12 +88,9 @@ final class AppState {
         logger.info("App state initialized historyCount=\(self.history.count, privacy: .public) clipboardReady=\((self.lastClipboardSnapshot != nil), privacy: .public)")
     }
 
-    static func bootstrap() -> AppState {
-        let historyURL = ApplicationPaths.historyURL()
-        let store = try? HistoryStore(fileURL: historyURL)
-        let historyStore = store ?? (try! HistoryStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("snapaction-history.json")))
-        let clipboardStore = (try? ClipboardSnapshotStore(fileURL: ApplicationPaths.clipboardURL()))
-            ?? (try! ClipboardSnapshotStore(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent("snapaction-clipboard.json")))
+    static func bootstrap() throws -> AppState {
+        let historyStore = try HistoryStore(fileURL: ApplicationPaths.historyURL())
+        let clipboardStore = try ClipboardSnapshotStore(fileURL: ApplicationPaths.clipboardURL())
         let extractor = LocalFoundationModelsExtractor(fallback: RuleBasedFallbackExtractor())
         let executor = PlatformActionExecutor(clipboardStore: clipboardStore)
         let workflow = CaptureWorkflow(
@@ -120,6 +119,10 @@ final class AppState {
 
     var isProcessing: Bool {
         processingStage != .idle
+    }
+
+    var allowsNewOperation: Bool {
+        processingStage.allowsNewOperation
     }
 
     var workspacePresentation: WorkspacePresentation {
@@ -265,9 +268,14 @@ final class AppState {
                 storeExecutionFeedback(result, for: candidate.id, document: document)
                 refreshHistory()
                 refreshClipboardSnapshot()
-                logger.info("Action execution finished result=\(result.displayMessage, privacy: .public)")
+                if case .failed = result {
+                    logger.error("Action execution finished with a recoverable failure")
+                } else {
+                    logger.info("Action execution finished kind=\(candidate.kind.rawValue, privacy: .public)")
+                }
             } catch {
-                logger.error("Action execution failed: \(error.localizedDescription, privacy: .public)")
+                let nsError = error as NSError
+                logger.error("Action execution threw domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)")
                 let result = ActionExecutionResult.failed(message: error.localizedDescription)
                 storeExecutionFeedback(result, for: candidate.id, document: document)
             }
@@ -279,8 +287,11 @@ final class AppState {
             clipboardStatus = "No saved clipboard yet"
             return
         }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(snapshot.text, forType: .string)
+        guard clipboardWriter(snapshot.text) else {
+            clipboardStatus = "Could not restore the saved clipboard"
+            logger.error("Clipboard restore failed")
+            return
+        }
         clipboardStatus = "Ready: \(snapshot.title)"
         logger.info("Clipboard restored from durable snapshot source=\(snapshot.source.rawValue, privacy: .public)")
     }
@@ -386,6 +397,11 @@ final class AppState {
     ) {
         guard currentDocument == document, selectedCandidate?.id == candidateID else { return }
         lastExecutionFeedback = CandidateExecutionFeedback(candidateID: candidateID, result: result)
+    }
+
+    private static func writeToPasteboard(_ text: String) -> Bool {
+        NSPasteboard.general.clearContents()
+        return NSPasteboard.general.setString(text, forType: .string)
     }
 }
 

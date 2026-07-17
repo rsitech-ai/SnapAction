@@ -6,9 +6,14 @@ import SnapActionCore
 final class PlatformActionExecutor: ActionExecuting, @unchecked Sendable {
     private let eventStore = EKEventStore()
     private let clipboardStore: ClipboardSnapshotStore?
+    private let clipboardWriter: @Sendable (String) -> Bool
 
-    init(clipboardStore: ClipboardSnapshotStore? = nil) {
+    init(
+        clipboardStore: ClipboardSnapshotStore? = nil,
+        clipboardWriter: @escaping @Sendable (String) -> Bool = PlatformActionExecutor.writeToPasteboard
+    ) {
         self.clipboardStore = clipboardStore
+        self.clipboardWriter = clipboardWriter
     }
 
     func execute(_ candidate: ActionCandidate, confirmed: Bool) async throws -> ActionExecutionResult {
@@ -50,7 +55,7 @@ final class PlatformActionExecutor: ActionExecuting, @unchecked Sendable {
     }
 
     private func createEvent(from candidate: ActionCandidate) async throws -> ActionExecutionResult {
-        let granted = try await eventStore.requestFullAccessToEvents()
+        let granted = try await eventStore.requestWriteOnlyAccessToEvents()
         guard granted else {
             return .failed(message: "Calendar access was denied.")
         }
@@ -73,16 +78,26 @@ final class PlatformActionExecutor: ActionExecuting, @unchecked Sendable {
 
     private func copyToClipboard(_ candidate: ActionCandidate) -> ActionExecutionResult {
         let text = candidate.fields[.tableMarkdown] ?? candidate.fields[.extractedText] ?? candidate.sourceText
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-        try? clipboardStore?.save(
-            ClipboardSnapshot(
-                title: candidate.title.isEmpty ? "Copied text" : candidate.title,
-                text: text,
-                source: candidate.kind
+        guard clipboardWriter(text) else {
+            return .failed(message: "SnapAction couldn’t write the extracted text to the clipboard.")
+        }
+        do {
+            try clipboardStore?.save(
+                ClipboardSnapshot(
+                    title: candidate.title.isEmpty ? "Copied text" : candidate.title,
+                    text: text,
+                    source: candidate.kind
+                )
             )
-        )
+        } catch {
+            return .failed(message: "Copied, but SnapAction couldn’t save a restore snapshot.")
+        }
         return .copiedToClipboard
+    }
+
+    private static func writeToPasteboard(_ text: String) -> Bool {
+        NSPasteboard.general.clearContents()
+        return NSPasteboard.general.setString(text, forType: .string)
     }
 
     private static func parseDate(_ text: String) -> Date? {
