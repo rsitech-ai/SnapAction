@@ -37,6 +37,9 @@ public struct ClipboardSnapshotStore: Sendable {
 
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            try PersistencePermissions.restrictFile(fileURL)
+        }
     }
 
     public func load() throws -> ClipboardSnapshot? {
@@ -56,6 +59,7 @@ public struct ClipboardSnapshotStore: Sendable {
     public func save(_ snapshot: ClipboardSnapshot) throws {
         let data = try encoder.encode(snapshot)
         try data.write(to: fileURL, options: .atomic)
+        try PersistencePermissions.restrictFile(fileURL)
     }
 
     private func recoverCorruptFile() throws {

@@ -2,7 +2,6 @@ import SnapActionCore
 import SwiftUI
 
 enum SnapActionDesign {
-    static let spacingXS: CGFloat = 6
     static let spacingS: CGFloat = 10
     static let spacingM: CGFloat = 16
     static let spacingL: CGFloat = 24
@@ -26,19 +25,6 @@ extension DisplayTone {
 
     var softColor: Color {
         color.opacity(0.14)
-    }
-}
-
-extension ConfidenceBand {
-    var label: String {
-        switch self {
-        case .low:
-            "Low"
-        case .medium:
-            "Medium"
-        case .high:
-            "High"
-        }
     }
 }
 

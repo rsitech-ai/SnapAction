@@ -15,11 +15,13 @@ struct ContentView: View {
                 Button(action: appState.captureScreenSnapshot) {
                     Label("Capture Screen", systemImage: "rectangle.dashed")
                 }
+                .disabled(!appState.allowsNewOperation)
                 .help("Capture the first display")
 
                 Button(action: appState.importImageForOCR) {
                     Label("Import Image", systemImage: "photo.badge.magnifyingglass")
                 }
+                .disabled(!appState.allowsNewOperation)
                 .help("Import an image for text recognition")
             }
         }

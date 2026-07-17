@@ -39,13 +39,26 @@ cat >"$INFO_PLIST" <<PLIST
   <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
+  <key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+  <string>SnapAction creates calendar events only after you review and confirm them.</string>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
+  <key>NSRemindersFullAccessUsageDescription</key>
+  <string>SnapAction creates reminders only after you review and confirm them.</string>
+  <key>NSScreenCaptureUsageDescription</key>
+  <string>SnapAction captures the display you choose so it can recognize text and suggest actions.</string>
 </dict>
 </plist>
 PLIST
+
+/usr/bin/codesign --force --sign - "$APP_BUNDLE"
+/usr/bin/codesign --verify --deep --strict "$APP_BUNDLE"
 
 open_app() {
   /usr/bin/open -n "$APP_BUNDLE"
@@ -68,8 +81,16 @@ case "$MODE" in
     ;;
   --verify|verify)
     open_app
-    sleep 1
-    pgrep -x "$APP_NAME" >/dev/null
+    for _ in {1..50}; do
+      if pgrep -x "$APP_NAME" >/dev/null; then
+        break
+      fi
+      sleep 0.1
+    done
+    if ! pgrep -x "$APP_NAME" >/dev/null; then
+      echo "$APP_NAME did not start within 5 seconds." >&2
+      exit 1
+    fi
     swift test
     ;;
   *)

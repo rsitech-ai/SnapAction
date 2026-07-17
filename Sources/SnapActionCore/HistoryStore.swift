@@ -53,6 +53,7 @@ public struct HistoryStore: Sendable {
         if !FileManager.default.fileExists(atPath: fileURL.path) {
             try Data("[]".utf8).write(to: fileURL, options: .atomic)
         }
+        try PersistencePermissions.restrictFile(fileURL)
     }
 
     public var retentionDays: Int {
@@ -88,6 +89,7 @@ public struct HistoryStore: Sendable {
         } catch {
             try recoverCorruptFile()
             try Data("[]".utf8).write(to: fileURL, options: .atomic)
+            try PersistencePermissions.restrictFile(fileURL)
             return []
         }
 
@@ -113,6 +115,7 @@ public struct HistoryStore: Sendable {
     private func write(_ entries: [HistoryEntry]) throws {
         let data = try encoder.encode(entries)
         try data.write(to: fileURL, options: .atomic)
+        try PersistencePermissions.restrictFile(fileURL)
     }
 
     private func recoverCorruptFile() throws {
@@ -168,6 +171,7 @@ private final class HistoryRetentionPreferences: @unchecked Sendable {
             self.storedDays = 30
             try Self.write(30, to: fileURL)
         }
+        try PersistencePermissions.restrictFile(fileURL)
     }
 
     var days: Int {
@@ -193,5 +197,6 @@ private final class HistoryRetentionPreferences: @unchecked Sendable {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(Payload(days: days))
         try data.write(to: fileURL, options: .atomic)
+        try PersistencePermissions.restrictFile(fileURL)
     }
 }
