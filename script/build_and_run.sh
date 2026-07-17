@@ -81,17 +81,30 @@ case "$MODE" in
     ;;
   --verify|verify)
     open_app
+    app_pid=""
     for _ in {1..50}; do
-      if pgrep -x "$APP_NAME" >/dev/null; then
+      app_pid="$(pgrep -x "$APP_NAME" | head -n 1 || true)"
+      if [[ -n "$app_pid" ]]; then
         break
       fi
       sleep 0.1
     done
-    if ! pgrep -x "$APP_NAME" >/dev/null; then
+    if [[ -z "$app_pid" ]]; then
       echo "$APP_NAME did not start within 5 seconds." >&2
       exit 1
     fi
+    for _ in {1..10}; do
+      if ! kill -0 "$app_pid" >/dev/null 2>&1; then
+        echo "$APP_NAME exited during the startup stability check." >&2
+        exit 1
+      fi
+      sleep 0.1
+    done
     swift test
+    if ! kill -0 "$app_pid" >/dev/null 2>&1; then
+      echo "$APP_NAME exited before verification completed." >&2
+      exit 1
+    fi
     ;;
   *)
     echo "usage: $0 [run|--debug|--logs|--telemetry|--verify]" >&2
