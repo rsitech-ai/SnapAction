@@ -29,10 +29,10 @@ fi
 
 codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
 
-if rg -q 'requestFullAccessToEvents' Sources/SnapActionApp/PlatformActionExecutor.swift; then
+if /usr/bin/grep -Fq 'requestFullAccessToEvents' Sources/SnapActionApp/PlatformActionExecutor.swift; then
   echo "Calendar creation must request write-only EventKit access." >&2
   exit 1
 fi
-rg -q 'requestWriteOnlyAccessToEvents' Sources/SnapActionApp/PlatformActionExecutor.swift
+/usr/bin/grep -Fq 'requestWriteOnlyAccessToEvents' Sources/SnapActionApp/PlatformActionExecutor.swift
 
 echo "Bundle privacy metadata, signature integrity, and EventKit access policy verified."
