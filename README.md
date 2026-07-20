@@ -18,7 +18,7 @@ The app remains useful without Apple Intelligence: it falls back to safe text/ta
 ## Current Limitations
 
 - The capture shortcut takes the first display; there is no display picker yet.
-- Local source builds use an ad-hoc-signed community identity. The published direct-download build is Developer ID signed but is not sandboxed or App Store packaged; notarization status is stated on each release.
+- Local source builds use an ad-hoc-signed community identity. The initial `v0.1.0` direct-download prerelease is Developer ID signed but not notarized, sandboxed, or App Store packaged; standard Gatekeeper launch remains blocked until a notarized asset replaces it.
 - Foundation Models availability depends on the local macOS and Apple Intelligence configuration.
 - System-wide shortcut monitoring can be limited by macOS privacy settings; focused menu commands remain available.
 - The formal Codex Security scan was skipped for the initial release by explicit owner direction. This is disclosed as accepted residual risk, not as completed security evidence.
@@ -70,7 +70,7 @@ The clipboard cache expires after seven days and can be cleared from Settings wi
 
 `script/build_and_run.sh` stages an unofficial `SnapAction Community` bundle with the neutral identifier `org.example.snapaction.community` unless a developer supplies validated overrides. See [community build configuration](docs/community-build/README.md). Official identity, signing credentials, Team IDs, and App Store credentials are not part of this repository.
 
-Download the latest Apple-silicon ZIP and SHA-256 sidecar from [GitHub Releases](https://github.com/rsitech-ai/SnapAction/releases). The official archive uses the `ai.rsitech.snapaction` identity and is signed with RSI Tech's installed Developer ID Application identity. Check the release page for the exact notarization status, then verify the checksum:
+Download the latest Apple-silicon ZIP and SHA-256 sidecar from [GitHub Releases](https://github.com/rsitech-ai/SnapAction/releases). The official archive uses the `ai.rsitech.snapaction` identity and is signed with RSI Tech's installed Developer ID Application identity. The initial `v0.1.0` prerelease is not notarized and is rejected by Gatekeeper as `Unnotarized Developer ID`; check the release page for the exact status of later replacement assets, then verify the checksum:
 
 ```bash
 shasum -a 256 -c SnapAction-0.1.0-macos-arm64.zip.sha256

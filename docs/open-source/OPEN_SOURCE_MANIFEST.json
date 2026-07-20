@@ -45,7 +45,7 @@
     "NOTICE": "e3b64f362f8d69cf14f2cb4198b2e643d92c78494f30c39a96484808563afed9",
     "PRIVACY.md": "73470d37a5ed0c0c2685056b263a260224a7f2ac5c1c00065621eac7e84409a0",
     "Package.swift": "267545c2922beecaf508bc7c78ea0cea329804989b4fdf445dcc9e9f7b62ccd0",
-    "README.md": "c42973c8ec08ba1cbf92d7149bbdb857c7e047f11140630a8602b8dab57e4b9f",
+    "README.md": "2af12dfc0996d59fe60f9ea08bcca43deecac3fcadefd5105694b379f57f4d9d",
     "RELEASING.md": "deb1efac138a1d686c232349234bd89700b14afc44d749073231f207474553c9",
     "ROADMAP.md": "43b54db2f5edfa4d1a43254e576751c5877d9e80d8cad509eb7c885d80130d96",
     "SECURITY.md": "0c165b933abf0e58efc244f0432471ca95f30d0176d97c115ebe005ecfff2252",
@@ -110,7 +110,7 @@
     "docs/open-source/SUPPLY_CHAIN_READINESS.md": "a2a3aecae67cf107ef595cb08f41971db211dce9392be9b25a6a17c296cd1cd9",
     "docs/open-source/THIRD_PARTY_INVENTORY.md": "e7548eb29730c2c75cb1cc68d15759d5d84d0d3f996f1868342b9fef727af05a",
     "docs/open-source/TRADEMARK_REVIEW.md": "8a6971a845afd64f7fd15bf54c60fe6fac4b55571650935713174a02e35c0420",
-    "docs/release/0.1.0.md": "ad96b5eac87be3dc9d2b060e88990d5e5e405faf4d9f95676f92f1d41885f4ab",
+    "docs/release/0.1.0.md": "5446dc986863a2f1a60a82dbc44f16ad32862b50fbf7333d80b72b09eb5c055d",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md": "341d7340f7085d88d5186b448f0aa5ecefad31dbf293e52f940a462065648a8f",
     "script/build_and_run.sh": "39b20e6cfa265837ec73fe639d6b6e1bff8758f87306ac1bcec33cc416934dd2",
     "script/check_publication_gates.py": "be7599ce5f448d810956e32dc80bf1b402712bd2bd6e7345d11e9a406af1f886",
@@ -143,11 +143,9 @@
       ],
       "approved_git_email": "24563931+s1korrrr@users.noreply.github.com",
       "owner_exposure_decision": "REWRITE_AUTHORIZED",
-      "personal_path_exposure_detected": true,
-      "status": "REVIEW_REQUIRED",
-      "unexpected_emails": [
-        "mrsikorarafal@gmail.com"
-      ]
+      "personal_path_exposure_detected": false,
+      "status": "REVIEWED",
+      "unexpected_emails": []
     }
   },
   "governance": {
@@ -164,21 +162,8 @@
     "root_license_valid": true
   },
   "publication": {
-    "blockers": [
-      {
-        "code": "PUBLISHED_HISTORY_IDENTITY_REWRITE_REQUIRED",
-        "detail": "Published HEAD history contains an author or committer email outside the approved personal noreply identity and allowed GitHub service identities.",
-        "gate": "owner",
-        "scope": "reachable_history"
-      },
-      {
-        "code": "PUBLISHED_HISTORY_PATH_REWRITE_REQUIRED",
-        "detail": "Published HEAD history still contains workstation-specific absolute paths.",
-        "gate": "owner",
-        "scope": "reachable_history"
-      }
-    ],
-    "status": "BLOCKED"
+    "blockers": [],
+    "status": "READY_WITH_ACCEPTED_RISK"
   },
   "schema_version": 2,
   "security": {
