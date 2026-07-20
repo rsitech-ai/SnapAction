@@ -117,7 +117,7 @@
     "script/generate_sbom.py": "b58957c46e27dfd79a90864731de270876d4cca55b996881d121ab3a90daa0f6",
     "script/package_release.sh": "498630da8bd3906a9fbde0d570c1f925e2d10b4ff144cb998e5792d4394b4779",
     "script/publication_evidence.py": "a1badd0f5bff58a6a266cc216bfc31dfb438a5ac5ea7eeea9dc50da0a92f7362",
-    "script/test_release_package.sh": "abe12f62a2c0869f1aaad8faac797a535d16a2d0540ae7ef9afcb1f8385a1cfa"
+    "script/test_release_package.sh": "00f48d78b357420e6a107a678468d96395e477885bc4d640cf915b128bfb1cb0"
   },
   "evidence_scopes": {
     "community_build": {
