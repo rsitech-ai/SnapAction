@@ -24,7 +24,10 @@ enum AppLaunchState {
             return .ready(try bootstrap())
         } catch {
             let nsError = error as NSError
-            Logger(subsystem: "com.s1kor.snapaction", category: "Startup").critical(
+            Logger(
+                subsystem: Bundle.main.bundleIdentifier ?? "org.example.snapaction.community",
+                category: "Startup"
+            ).critical(
                 "Local storage initialization failed domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)"
             )
             return .failed(
