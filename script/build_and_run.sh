@@ -2,24 +2,124 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-APP_NAME="SnapAction"
-BUNDLE_ID="com.s1kor.snapaction"
+PRODUCT_NAME="SnapAction"
 MIN_SYSTEM_VERSION="26.0"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_NAME="${SNAP_ACTION_APP_NAME:-SnapAction Community}"
+BUNDLE_ID="${SNAP_ACTION_BUNDLE_ID:-org.example.snapaction.community}"
+VERSION="${SNAP_ACTION_VERSION:-0.1.0}"
+BUILD="${SNAP_ACTION_BUILD:-1}"
+SOURCE_URL="${SNAP_ACTION_SOURCE_URL:-}"
+SOURCE_REVISION="${SNAP_ACTION_SOURCE_REVISION:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
+
+configuration_error() {
+  echo "invalid $1: $2" >&2
+  exit 2
+}
+
+[[ "$APP_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._\ -]{0,63}$ ]] \
+  || configuration_error "SNAP_ACTION_APP_NAME" "use 1-64 letters, numbers, spaces, dots, underscores, or hyphens"
+[[ "$BUNDLE_ID" =~ ^[A-Za-z][A-Za-z0-9-]*(\.[A-Za-z][A-Za-z0-9-]*)+$ ]] \
+  || configuration_error "SNAP_ACTION_BUNDLE_ID" "use a reverse-DNS identifier with at least two components"
+[[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] \
+  || configuration_error "SNAP_ACTION_VERSION" "use one to three dot-separated non-negative integers"
+[[ "$BUILD" =~ ^[1-9][0-9]*$ ]] \
+  || configuration_error "SNAP_ACTION_BUILD" "use a positive integer"
+[[ "$SOURCE_REVISION" =~ ^[0-9a-fA-F]{40}$ ]] \
+  || configuration_error "SNAP_ACTION_SOURCE_REVISION" "use the exact 40-character Git revision"
+
+validate_and_escape_source_url() {
+  python3 - "$1" <<'PYTHON'
+import ipaddress
+import re
+import sys
+from urllib.parse import urlsplit
+from xml.sax.saxutils import escape
+
+url = sys.argv[1]
+if not url or any(character.isspace() or ord(character) < 0x20 for character in url):
+    raise SystemExit(1)
+try:
+    parsed = urlsplit(url)
+    port = parsed.port
+except ValueError:
+    raise SystemExit(1)
+if parsed.scheme != "https" or not parsed.netloc or not parsed.hostname:
+    raise SystemExit(1)
+if parsed.username is not None or parsed.password is not None or port == 0:
+    raise SystemExit(1)
+hostname = parsed.hostname
+try:
+    ipaddress.ip_address(hostname)
+except ValueError:
+    try:
+        labels = hostname.encode("idna").decode("ascii").split(".")
+    except UnicodeError:
+        raise SystemExit(1)
+    label = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?")
+    if any(not label.fullmatch(item) for item in labels):
+        raise SystemExit(1)
+sys.stdout.write(escape(url))
+PYTHON
+}
+
+SOURCE_URL_PLIST_VALUE=""
+if [[ -n "$SOURCE_URL" ]]; then
+  if ! SOURCE_URL_PLIST_VALUE="$(validate_and_escape_source_url "$SOURCE_URL")"; then
+    configuration_error "SNAP_ACTION_SOURCE_URL" "use a credential-free HTTPS URL with a valid host"
+  fi
+fi
+
+print_config() {
+  printf '%s\n' \
+    "SNAP_ACTION_APP_NAME=$APP_NAME" \
+    "SNAP_ACTION_BUNDLE_ID=$BUNDLE_ID" \
+    "SNAP_ACTION_VERSION=$VERSION" \
+    "SNAP_ACTION_BUILD=$BUILD" \
+    "SNAP_ACTION_SOURCE_URL=$SOURCE_URL" \
+    "SNAP_ACTION_SOURCE_REVISION=$SOURCE_REVISION"
+}
+
+case "$MODE" in
+  --print-config|print-config)
+    print_config
+    exit 0
+    ;;
+  run|--debug|debug|--logs|logs|--telemetry|telemetry|--verify|verify)
+    ;;
+  *)
+    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify|--print-config]" >&2
+    exit 2
+    ;;
+esac
+
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
 APP_MACOS="$APP_CONTENTS/MacOS"
-APP_BINARY="$APP_MACOS/$APP_NAME"
+APP_BINARY="$APP_MACOS/$PRODUCT_NAME"
 INFO_PLIST="$APP_CONTENTS/Info.plist"
 
 cd "$ROOT_DIR"
 
-pkill -x "$APP_NAME" >/dev/null 2>&1 || true
+staged_process_pids() {
+  local pid executable
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    executable="$(ps -p "$pid" -o comm= 2>/dev/null | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' || true)"
+    case "$executable" in
+      "$DIST_DIR"/*.app/Contents/MacOS/"$PRODUCT_NAME") printf '%s\n' "$pid" ;;
+    esac
+  done < <(pgrep -x "$PRODUCT_NAME" || true)
+}
+
+while IFS= read -r staged_pid; do
+  kill "$staged_pid" >/dev/null 2>&1 || true
+done < <(staged_process_pids)
 
 swift build
-BUILD_BINARY="$(swift build --show-bin-path)/$APP_NAME"
+BUILD_BINARY="$(swift build --show-bin-path)/$PRODUCT_NAME"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS"
@@ -32,17 +132,19 @@ cat >"$INFO_PLIST" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key>
-  <string>$APP_NAME</string>
+  <string>$PRODUCT_NAME</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleName</key>
   <string>$APP_NAME</string>
+  <key>CFBundleDisplayName</key>
+  <string>$APP_NAME</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.0</string>
+  <string>$VERSION</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>$BUILD</string>
   <key>LSMinimumSystemVersion</key>
   <string>$MIN_SYSTEM_VERSION</string>
   <key>NSCalendarsWriteOnlyAccessUsageDescription</key>
@@ -52,7 +154,19 @@ cat >"$INFO_PLIST" <<PLIST
   <key>NSRemindersFullAccessUsageDescription</key>
   <string>SnapAction creates reminders only after you review and confirm them.</string>
   <key>NSScreenCaptureUsageDescription</key>
-  <string>SnapAction captures the display you choose so it can recognize text and suggest actions.</string>
+  <string>SnapAction captures the first display after you choose Capture Screen so it can recognize text and suggest actions.</string>
+  <key>SnapActionSourceRevision</key>
+  <string>$SOURCE_REVISION</string>
+PLIST
+
+if [[ -n "$SOURCE_URL" ]]; then
+  cat >>"$INFO_PLIST" <<PLIST
+  <key>SnapActionSourceURL</key>
+  <string>$SOURCE_URL_PLIST_VALUE</string>
+PLIST
+fi
+
+cat >>"$INFO_PLIST" <<PLIST
 </dict>
 </plist>
 PLIST
@@ -73,7 +187,7 @@ case "$MODE" in
     ;;
   --logs|logs)
     open_app
-    /usr/bin/log stream --info --style compact --predicate "process == \"$APP_NAME\""
+    /usr/bin/log stream --info --style compact --predicate "process == \"$PRODUCT_NAME\""
     ;;
   --telemetry|telemetry)
     open_app
@@ -83,7 +197,7 @@ case "$MODE" in
     open_app
     app_pid=""
     for _ in {1..50}; do
-      app_pid="$(pgrep -x "$APP_NAME" | head -n 1 || true)"
+      app_pid="$(staged_process_pids | head -n 1 || true)"
       if [[ -n "$app_pid" ]]; then
         break
       fi
@@ -105,9 +219,5 @@ case "$MODE" in
       echo "$APP_NAME exited before verification completed." >&2
       exit 1
     fi
-    ;;
-  *)
-    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify]" >&2
-    exit 2
     ;;
 esac
