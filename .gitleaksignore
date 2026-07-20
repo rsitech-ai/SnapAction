@@ -1,0 +1,7 @@
+# SHA-256 content digests in OPEN_SOURCE_MANIFEST.json evidence_inputs are not secrets.
+3f5509d34b8c7973912b0b011a280df15fef1b3b:docs/open-source/OPEN_SOURCE_MANIFEST.json:generic-api-key:105
+64fd399c30f68603b25df112e7efcfa59f31a3db:docs/open-source/OPEN_SOURCE_MANIFEST.json:generic-api-key:43
+a9a7091eea6b968d8adab2613aaab4e5664336bf:docs/open-source/OPEN_SOURCE_MANIFEST.json:generic-api-key:43
+docs/open-source/OPEN_SOURCE_MANIFEST.json:generic-api-key:108
+docs/open-source/OPEN_SOURCE_MANIFEST.json:generic-api-key:109
+f559dfedb8c42650e996eb6ab4912460080bd66d:docs/open-source/OPEN_SOURCE_MANIFEST.json:generic-api-key:108

@@ -32,12 +32,14 @@ CI_REQUIRED_COMMANDS = (
     "bash script/test_bundle_metadata.sh",
     "bash script/test_release_package.sh",
     "python3 -m unittest discover -s Tests/ToolingTests -v",
+    "python3 script/check_publication_gates.py",
     "python3 script/check_repository_policy.py",
 )
 
 REQUIRED_DOCUMENTS = (
     ".editorconfig",
     ".gitattributes",
+    ".gitleaksignore",
     ".github/ISSUE_TEMPLATE/bug.yml",
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/feature.yml",
@@ -102,6 +104,7 @@ REQUIRED_SECRET_IGNORES = (
     "*.mobileprovision",
     "*.provisionprofile",
     ".codex/",
+    ".cursor/",
 )
 
 

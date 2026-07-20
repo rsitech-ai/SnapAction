@@ -1,15 +1,17 @@
 # GitHub configuration handoff
 
-Target public configuration for `rsitech-ai/SnapAction`, approved on 2026-07-20:
+Canonical public repository: `https://github.com/rsitech-ai/SnapAction` (organization-owned, Apache-2.0).
 
-- owner type: organization;
-- visibility: public after the rewritten PR is merged and release evidence passes;
+Configured on 2026-07-20:
+
 - default branch: `main`;
-- detected license: Apache-2.0 after merge; private vulnerability reporting: enable before issue intake;
-- Actions: enabled, but hosted jobs are externally blocked before execution by the GitHub account billing/spending-limit state;
-- no releases or tags existed before the `0.1.0` private-preview pass.
-
-The transfer preserves repository history, pull requests, and redirects. The owner separately authorized sanitizing published history before public visibility.
+- visibility: public;
+- private vulnerability reporting: enabled;
+- secret scanning and push protection: enabled;
+- Dependabot security updates: enabled;
+- Actions: enabled; hosted `macos-26` CI job `build-and-test` is required on `main`;
+- branch protection on `main`: required status check `build-and-test` (strict), enforce admins, dismiss stale reviews, linear history, conversation resolution, no force pushes, no branch deletion;
+- required approving review count is `0` so a maintainer can merge after green CI without inventing a second human reviewer on a solo-maintained repo.
 
 ## Repository metadata
 
@@ -19,11 +21,9 @@ The transfer preserves repository history, pull requests, and redirects. The own
 
 ## Repository settings
 
-- Enable Issues with structured templates and private vulnerability reporting.
-- Keep Wiki, Discussions, Projects, Pages, and sponsorship disabled unless each has an accountable maintainer and purpose.
+- Issues enabled with structured templates.
+- Wiki, Discussions, Projects, Pages, and sponsorship remain disabled unless each has an accountable maintainer and purpose.
 - Restrict Actions to approved, immutable-pinned actions; retain read-only default token permissions.
-- After CI proves reliable on `main`, protect it with pull requests, required CI, conversation resolution, force-push prevention, and branch-deletion prevention.
-- Enable dependency graph, Dependabot alerts/security updates, secret scanning/push protection, and private vulnerability reporting when the repository plan and visibility support them.
-- Recheck every protection and security setting after any visibility change.
+- Recheck every protection and security setting after any visibility or ownership change.
 
-Do not add required hosted checks while Actions remains blocked before execution by the account billing/spending-limit state. Re-evaluate protection after the first real hosted green run.
+Do not claim notarization, App Store acceptance, or a completed Codex Security scan from GitHub configuration alone.

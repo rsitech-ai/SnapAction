@@ -86,12 +86,18 @@ class PublicationToolTests(unittest.TestCase):
         self.assertTrue(manifest["security"]["formal_codex_security_scan"]["risk_accepted_by_owner"])
         self.assertEqual(manifest["security"]["security_contact"], "info@rsitech.ai")
         credential_review = manifest["security"]["credential_review"]
-        self.assertEqual(credential_review["current_repository_status"], "NOT_FORMALLY_SCANNED")
+        self.assertEqual(
+            credential_review["current_repository_status"],
+            "GITLEAKS_SCANNED_NO_CONFIRMED_CREDENTIAL",
+        )
         self.assertEqual(
             credential_review["current_reachable_history_status"],
-            "NOT_FORMALLY_SCANNED",
+            "GITLEAKS_SCANNED_NO_CONFIRMED_CREDENTIAL",
         )
         self.assertFalse(credential_review["formal_scan_coverage"])
+        self.assertEqual(credential_review["gitleaks"]["tool"], "gitleaks")
+        self.assertEqual(credential_review["gitleaks"]["version"], "8.30.1")
+        self.assertEqual(credential_review["gitleaks"]["status"], "NO_CONFIRMED_CREDENTIAL")
         self.assertEqual(
             credential_review["historical_observation"]["anchor_commit"],
             "ed49cf7f3a7ebe4fc8502d9b6462a9193663ff2c",

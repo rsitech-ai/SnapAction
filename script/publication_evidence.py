@@ -192,6 +192,7 @@ def evidence_input_hashes() -> dict[str, str]:
         REPO_ROOT / "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md",
         REPO_ROOT / ".editorconfig",
         REPO_ROOT / ".gitattributes",
+        REPO_ROOT / ".gitleaksignore",
         REPO_ROOT / ".gitignore",
         REPO_ROOT / ".github/dependabot.yml",
         REPO_ROOT / "CHANGELOG.md",
@@ -293,9 +294,16 @@ def build_manifest() -> dict[str, Any]:
         "schema_version": 2,
         "security": {
             "credential_review": {
-                "current_reachable_history_status": "NOT_FORMALLY_SCANNED",
-                "current_repository_status": "NOT_FORMALLY_SCANNED",
+                "current_reachable_history_status": "GITLEAKS_SCANNED_NO_CONFIRMED_CREDENTIAL",
+                "current_repository_status": "GITLEAKS_SCANNED_NO_CONFIRMED_CREDENTIAL",
                 "formal_scan_coverage": False,
+                "gitleaks": {
+                    "false_positive_class": "sha256_content_digests_in_open_source_manifest",
+                    "scope": "working tree and reachable published history",
+                    "status": "NO_CONFIRMED_CREDENTIAL",
+                    "tool": "gitleaks",
+                    "version": "8.30.1",
+                },
                 "historical_observation": {
                     "anchor_commit": "ed49cf7f3a7ebe4fc8502d9b6462a9193663ff2c",
                     "conclusion": "NO_CONFIRMED_CREDENTIAL_AT_AUDITED_BASE",
