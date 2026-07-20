@@ -113,6 +113,13 @@ class PublicationToolTests(unittest.TestCase):
         self.assertIn("reachable_history", manifest["evidence_scopes"])
         self.assertIn("community_build", manifest["evidence_scopes"])
         self.assertIn("external_manual_gates", manifest["evidence_scopes"])
+        self.assertEqual(
+            manifest["evidence_scopes"]["reachable_history"]["allowed_github_service_emails"],
+            [
+                "49699333+dependabot[bot]@users.noreply.github.com",
+                "noreply@github.com",
+            ],
+        )
         self.assertEqual(manifest["verification_commands"], sorted(manifest["verification_commands"]))
         self.assertEqual(list(manifest["evidence_inputs"]), sorted(manifest["evidence_inputs"]))
         for tooling_input in (
@@ -199,6 +206,23 @@ class PublicationToolTests(unittest.TestCase):
         self.assertTrue(evidence_codes.isdisjoint(clean_codes))
         self.assertTrue(evidence_codes.issubset(exposed_codes))
         self.assertEqual(invalid_license_codes, {"APACHE_2_LICENSE_INVALID"})
+
+    def test_history_identity_policy_allows_only_the_maintainer_and_github_services(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from publication_evidence import ALLOWED_HISTORY_EMAILS
+        finally:
+            sys.path.pop(0)
+
+        self.assertEqual(
+            ALLOWED_HISTORY_EMAILS,
+            {
+                "24563931+s1korrrr@users.noreply.github.com",
+                "49699333+dependabot[bot]@users.noreply.github.com",
+                "noreply@github.com",
+            },
+        )
+        self.assertNotIn("mrsikorarafal@gmail.com", ALLOWED_HISTORY_EMAILS)
 
     def test_committed_generated_files_match_fresh_generation(self):
         self.assertEqual(COMMITTED_MANIFEST.read_bytes(), self.generated_bytes(MANIFEST_GENERATOR, cwd="/"))

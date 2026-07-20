@@ -99,12 +99,12 @@
     "docs/open-source/GITHUB_CONFIGURATION.md": "bad3c88f6b2790c6f7d8928e53329eb3cb9d22781b68356d6a454705ee0f00e8",
     "docs/open-source/GOVERNANCE_REVIEW.md": "a947634596e26b417c28d2b2dae799149948061daff61faed91830770e940918",
     "docs/open-source/GO_NO_GO.md": "7a301bc651176a6e01ff5b315735c39869ccdd480585003cfff24da453396aef",
-    "docs/open-source/IP_INVENTORY.md": "01566e738c10c1ba073be646204fa813f10686bb9f7d538f096083b09e3e3e67",
+    "docs/open-source/IP_INVENTORY.md": "74650ad06c4327a6f47a6dd88f6ae8cd32be7c73888785ecfa23bcc10db929c8",
     "docs/open-source/LICENSE_MAP.md": "a930ff9aa00860eab0247b33486abd26d24847c6dc6037d74ccaa18fcd3f1e9b",
-    "docs/open-source/OPEN_SOURCE_STATUS.md": "68a3fb0df4b9bbefb85ace33026b4174501d675b2fef1ae5297b24145e2f7a8e",
+    "docs/open-source/OPEN_SOURCE_STATUS.md": "080cec41448363f36049292b19c7aba04edbdecf70b55f4a0df20682bc18e3f2",
     "docs/open-source/PROFILE_PROPOSAL.md": "7a66dbb2bedc20c9c1f1d984a9b9036cd3e0822eb0176d37d435c1f9c97913ce",
-    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "58303d06e824bf7e4ac227cfa1850be9a735c70c207303c858e6130c4a454549",
-    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "a53f156a8c62a499e215341be461aa6fcc07bb6158d9bc6b29fda219c150c3e7",
+    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "a2181919c16b9e9332552d7cf59eda8a1737954b07f32fc87e7860c79e873916",
+    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "6463fabb3ffd048e524f5b1512c895f5f023645e403877100d2d0b511efa72c5",
     "docs/open-source/SECRET_AUDIT.md": "cd3ddcee7f2d97dbff90823eae98a958db15714afc2d73d1628dac4a98e55653",
     "docs/open-source/SECURITY_READINESS.md": "812af89c66ccda53bf6156607a311cb076500dfc06b05f71f7cc093f1f6afa08",
     "docs/open-source/SUPPLY_CHAIN_READINESS.md": "a2a3aecae67cf107ef595cb08f41971db211dce9392be9b25a6a17c296cd1cd9",
@@ -118,7 +118,7 @@
     "script/generate_open_source_manifest.py": "b8ee5ca0e44ba7381b7fea3c17676541ec0b123dbc21c3d0644b9924e39ed93e",
     "script/generate_sbom.py": "b467d6d5347be504c1ba85f940163aba2fc765208c7c2639b4a27e9d134ce1bd",
     "script/package_release.sh": "329a632e50f6763c9ed402c6adadfa9867301c3f6d54d99b3d738b694f65837f",
-    "script/publication_evidence.py": "6600a9ef33e30bd987973f7009740ef461a63d0c8d1f45d6691ea1d7a0fa39bc",
+    "script/publication_evidence.py": "0c4339b1a3ae5bbe9d6421239e7ef8f6722b9f4a309b5f14446162a79879c5ba",
     "script/test_release_package.sh": "00f48d78b357420e6a107a678468d96395e477885bc4d640cf915b128bfb1cb0"
   },
   "evidence_scopes": {
@@ -137,13 +137,16 @@
       "unresolved_count": 0
     },
     "reachable_history": {
+      "allowed_github_service_emails": [
+        "49699333+dependabot[bot]@users.noreply.github.com",
+        "noreply@github.com"
+      ],
       "approved_git_email": "24563931+s1korrrr@users.noreply.github.com",
       "owner_exposure_decision": "REWRITE_AUTHORIZED",
       "personal_path_exposure_detected": true,
       "status": "REVIEW_REQUIRED",
       "unexpected_emails": [
-        "mrsikorarafal@gmail.com",
-        "noreply@github.com"
+        "mrsikorarafal@gmail.com"
       ]
     }
   },
@@ -164,7 +167,7 @@
     "blockers": [
       {
         "code": "PUBLISHED_HISTORY_IDENTITY_REWRITE_REQUIRED",
-        "detail": "Published HEAD history contains author or committer email outside the approved noreply identity.",
+        "detail": "Published HEAD history contains an author or committer email outside the approved personal noreply identity and allowed GitHub service identities.",
         "gate": "owner",
         "scope": "reachable_history"
       },

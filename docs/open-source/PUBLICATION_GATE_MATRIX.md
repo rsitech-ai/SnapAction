@@ -9,7 +9,7 @@
 | Security contact | Approved | GitHub private advisories and `info@rsitech.ai`. |
 | Formal Codex Security scan | Skipped / risk accepted | Explicit owner direction; never represent as completed or passed. |
 | Current-tree personal paths | Enforced | Repository policy must find none. |
-| Published-history paths and email | Rewrite required before publication | `HEAD` must contain no workstation path and only the approved noreply author/committer email. |
+| Published-history paths and email | Rewrite required before publication | `HEAD` must contain no workstation path. Personal commits must use the approved maintainer noreply email; GitHub and Dependabot service commits may retain their provider noreply identities. |
 | Community build identity | Configured | Local source build remains neutral and ad-hoc signed. |
 | Official direct-download identity | Configured | `SnapAction`, `ai.rsitech.snapaction`, arm64, Developer ID Application team `2NY8A789TN`. |
 | External Swift dependencies | Clear | `Package.swift` declares zero external packages. |

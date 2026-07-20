@@ -16,6 +16,13 @@ MANIFEST_PATH = REPO_ROOT / "docs/open-source/OPEN_SOURCE_MANIFEST.json"
 SBOM_PATH = REPO_ROOT / "artifacts/sbom/snapaction.cdx.json"
 APACHE_2_LICENSE_SHA256 = "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
 APPROVED_GIT_EMAIL = "24563931+s1korrrr@users.noreply.github.com"
+ALLOWED_GITHUB_SERVICE_EMAILS = frozenset(
+    {
+        "49699333+dependabot[bot]@users.noreply.github.com",
+        "noreply@github.com",
+    }
+)
+ALLOWED_HISTORY_EMAILS = ALLOWED_GITHUB_SERVICE_EMAILS | {APPROVED_GIT_EMAIL}
 
 
 def publication_blockers(
@@ -47,7 +54,7 @@ def publication_blockers(
         blockers.append(
             {
                 "code": "PUBLISHED_HISTORY_IDENTITY_REWRITE_REQUIRED",
-                "detail": "Published HEAD history contains author or committer email outside the approved noreply identity.",
+                "detail": "Published HEAD history contains an author or committer email outside the approved personal noreply identity and allowed GitHub service identities.",
                 "gate": "owner",
                 "scope": "reachable_history",
             }
@@ -157,7 +164,7 @@ def reachable_history_unapproved_emails() -> list[str]:
         {
             email.strip()
             for email in result.stdout.splitlines()
-            if email.strip() and email.strip() != APPROVED_GIT_EMAIL
+            if email.strip() and email.strip() not in ALLOWED_HISTORY_EMAILS
         }
     )
 
@@ -260,6 +267,7 @@ def build_manifest() -> dict[str, Any]:
             "reachable_history": {
                 "personal_path_exposure_detected": history_has_personal_paths,
                 "approved_git_email": APPROVED_GIT_EMAIL,
+                "allowed_github_service_emails": sorted(ALLOWED_GITHUB_SERVICE_EMAILS),
                 "unexpected_emails": unexpected_history_emails,
                 "owner_exposure_decision": "REWRITE_AUTHORIZED",
                 "status": "REVIEW_REQUIRED" if history_has_personal_paths or unexpected_history_emails else "REVIEWED",
