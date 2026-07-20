@@ -4,6 +4,6 @@ An earlier manual review anchored to base commit `e1f7c0a3c555e941241f710b53bb61
 
 The current repository status is **UNVERIFIED** and current reachable history is **NOT FORMALLY SCANNED**. The historical observation does not cover later commits, unavailable refs, or external systems and does not remove the need to rotate a credential if one is later validated.
 
-The formal Codex Security scan was explicitly deferred by the user. Publication remains blocked until that scan is completed and its findings are reviewed.
+The owner explicitly requested that this preparation finish without the formal Codex Security scan. That omission is recorded, not converted into a pass. Publication remains blocked unless a scan is completed and reviewed or the project separately records explicit acceptance of the residual risk.
 
 The evidence generators do not read arbitrary environment variables, do not emit environment values, and never record suspected secret values. Local signing material and official identity configuration remain ignored by Git.

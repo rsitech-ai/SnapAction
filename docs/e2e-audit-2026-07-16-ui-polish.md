@@ -3,7 +3,7 @@
 ## Scope
 
 - Date: 2026-07-16
-- App: `/Users/s1kor/dev/andrzej/SnapAction/dist/SnapAction.app`
+- App: `<repository>/dist/SnapAction.app`
 - Package / target: SwiftPM `SnapAction` / executable target `SnapActionApp`
 - Bundle identifier: `com.s1kor.snapaction`
 - Platform: native macOS 26+ SwiftUI app
@@ -19,7 +19,7 @@ Computer Use interactions were performed exclusively through the `node_repl` `@o
 | --- | --- | --- | --- |
 | Unit/integration tests | `swift test` | Passed before the audit and after each TDD fix; remediation suite now contains 46 tests | Terminal output; final fresh count is recorded in the verification section below |
 | Build | `swift build` | Passed | Terminal output |
-| Bundle launch | `script/build_and_run.sh --verify`; process-path inspection | Passed in the implementation worktree and again after fast-forwarding the primary feature branch | Final process path `/Users/s1kor/dev/andrzej/SnapAction/dist/SnapAction.app/Contents/MacOS/SnapAction` |
+| Bundle launch | `script/build_and_run.sh --verify`; process-path inspection | Passed in the implementation worktree and again after fast-forwarding the primary feature branch | Final process path `<repository>/dist/SnapAction.app/Contents/MacOS/SnapAction` |
 | Native UI | Computer Use through `node_repl` + `@oai/sky` | Real AX state read after each interaction | Scenario matrix below |
 | Telemetry | `script/build_and_run.sh --telemetry` | Live subsystem events captured; no raw OCR or clipboard payload | `.artifacts/ui-polish-2026-07-16/telemetry-subsystem.log` |
 | Motion source scan | `rg` over animation and accessibility APIs | No explicit animation call sites, loops, unscoped implicit animation, or custom duration | Strict motion review below |
@@ -132,7 +132,7 @@ The built app, capture-denied recovery, bounded caller response, live multi-cand
 - `swift build` — passed.
 - `script/build_and_run.sh --verify` — exit 0; its nested 46-test run passed.
 - `pgrep` / `ps` — PID `36312` at the final primary-checkout gate.
-- `ps` — executable was the primary feature-branch bundle at `/Users/s1kor/dev/andrzej/SnapAction/dist/SnapAction.app/Contents/MacOS/SnapAction`.
+- `ps` — executable was the primary feature-branch bundle at `<repository>/dist/SnapAction.app/Contents/MacOS/SnapAction`.
 - Pre-commit `git status --short` — only the updated audit, production plan, and review-hardening reflection were intentional tracked changes; `.artifacts` and `.superpowers` remained ignored.
 
 The next targeted pass should add an app-local QA fixture/launch override for multiple candidate kinds, large OCR, Light/Dark, Reduce Motion/Transparency, and increased contrast; then rerun MenuBarExtra and minimum-window automation with a status-item/window-frame-capable driver.

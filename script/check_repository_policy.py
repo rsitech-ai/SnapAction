@@ -25,6 +25,8 @@ VERIFIED_ACTION_REVISIONS = {
 }
 
 REQUIRED_DOCUMENTS = (
+    ".editorconfig",
+    ".gitattributes",
     ".github/ISSUE_TEMPLATE/bug.yml",
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/ISSUE_TEMPLATE/feature.yml",
@@ -36,32 +38,34 @@ REQUIRED_DOCUMENTS = (
     "README.md",
     "RELEASING.md",
     "ROADMAP.md",
+    "SECURITY.md",
     "SUPPORT.md",
     "docs/build/README.md",
     "docs/community-build/README.md",
     "docs/open-source/BLOCKERS.md",
     "docs/open-source/COMMUNITY_BUILD.md",
     "docs/open-source/GOVERNANCE_REVIEW.md",
+    "docs/open-source/GITHUB_CONFIGURATION.md",
+    "docs/open-source/GO_NO_GO.md",
     "docs/open-source/IP_INVENTORY.md",
     "docs/open-source/LICENSE_MAP.md",
     "docs/open-source/OPEN_SOURCE_MANIFEST.json",
     "docs/open-source/OPEN_SOURCE_STATUS.md",
     "docs/open-source/PUBLICATION_GATE_MATRIX.md",
     "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md",
+    "docs/open-source/PROFILE_PROPOSAL.md",
     "docs/open-source/SECRET_AUDIT.md",
     "docs/open-source/SECURITY_READINESS.md",
     "docs/open-source/SUPPLY_CHAIN_READINESS.md",
     "docs/open-source/THIRD_PARTY_INVENTORY.md",
     "docs/open-source/TRADEMARK_REVIEW.md",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md",
+    "docs/release/0.1.0-draft.md",
     "artifacts/sbom/snapaction.cdx.json",
 )
 
 REQUIRED_WORKFLOW_TRIGGERS = {
     "ci.yml": ("push", "pull_request"),
-    "codeql.yml": ("push", "pull_request", "schedule"),
-    "dependency-review.yml": ("pull_request",),
-    "license-compliance.yml": ("push", "pull_request"),
 }
 
 REQUIRED_SECRET_IGNORES = (

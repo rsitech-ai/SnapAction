@@ -23,8 +23,8 @@ MANUAL_BLOCKERS = (
         "scope": "external_manual_gates",
     },
     {
-        "code": "FORMAL_SECURITY_SCAN_DEFERRED",
-        "detail": "The user explicitly deferred the formal Codex Security scan; publication must remain blocked until it is completed and reviewed.",
+        "code": "FORMAL_SECURITY_SCAN_SKIPPED_BY_OWNER_REQUEST",
+        "detail": "The owner explicitly requested completion without a formal security scan; publication remains blocked unless that risk is separately accepted or a scan is completed and reviewed.",
         "gate": "security",
         "scope": "external_manual_gates",
     },
@@ -36,7 +36,7 @@ MANUAL_BLOCKERS = (
     },
     {
         "code": "LICENSE_APPROVAL_REQUIRED",
-        "detail": "MPL-2.0 is a proposal only; no license has owner or legal approval.",
+        "detail": "No project license has owner or legal approval.",
         "gate": "legal",
         "scope": "external_manual_gates",
     },
@@ -183,8 +183,12 @@ def evidence_input_hashes() -> dict[str, str]:
         REPO_ROOT / "script/generate_open_source_manifest.py",
         REPO_ROOT / "script/generate_sbom.py",
         REPO_ROOT / "script/publication_evidence.py",
+        REPO_ROOT / "docs/build/README.md",
         REPO_ROOT / "docs/community-build/README.md",
+        REPO_ROOT / "docs/release/0.1.0-draft.md",
         REPO_ROOT / "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md",
+        REPO_ROOT / ".editorconfig",
+        REPO_ROOT / ".gitattributes",
         REPO_ROOT / ".gitignore",
         REPO_ROOT / ".github/dependabot.yml",
         REPO_ROOT / "CHANGELOG.md",
@@ -192,6 +196,7 @@ def evidence_input_hashes() -> dict[str, str]:
         REPO_ROOT / "README.md",
         REPO_ROOT / "RELEASING.md",
         REPO_ROOT / "ROADMAP.md",
+        REPO_ROOT / "SECURITY.md",
         REPO_ROOT / "SUPPORT.md",
     ]
     github_configuration = REPO_ROOT / ".github"
@@ -200,6 +205,8 @@ def evidence_input_hashes() -> dict[str, str]:
     open_source_docs = REPO_ROOT / "docs/open-source"
     if open_source_docs.exists():
         paths.extend(path for path in open_source_docs.glob("*.md") if path.is_file())
+    paths.extend(path for path in (REPO_ROOT / "Sources").rglob("*.swift"))
+    paths.extend(path for path in (REPO_ROOT / "Tests").rglob("*.swift"))
     return {
         path.relative_to(REPO_ROOT).as_posix(): sha256(path)
         for path in sorted(paths)
@@ -260,7 +267,7 @@ def build_manifest() -> dict[str, Any]:
         "licensing": {
             "approved_spdx_id": None,
             "dco_adopted": False,
-            "proposed_spdx_id": "MPL-2.0",
+            "proposed_spdx_id": None,
             "root_license_present": root_license_present,
         },
         "publication": {
@@ -282,7 +289,7 @@ def build_manifest() -> dict[str, Any]:
             },
             "formal_codex_security_scan": {
                 "completed": False,
-                "status": "DEFERRED",
+                "status": "SKIPPED_BY_OWNER_REQUEST",
             },
             "security_contact": None,
         },

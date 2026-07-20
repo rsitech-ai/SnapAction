@@ -3,7 +3,7 @@
 | Scope | Contents | Current conclusion |
 | --- | --- | --- |
 | Application source | `Sources/SnapActionApp` and `Sources/SnapActionCore` | First-party repository source; ownership approval is still required before licensing. |
-| Tests and tooling | `Tests`, `script`, and Swift package metadata | First-party repository material; proposed license has not been adopted. |
+| Tests and tooling | `Tests`, `script`, and Swift package metadata | First-party repository material; no project license has been selected or adopted. |
 | Documentation | Repository Markdown documents | First-party repository material; the current tracked tree has been cleaned of workstation-specific absolute paths. |
 | Apple SDK APIs | Imported macOS system frameworks | Platform-provided APIs, not redistributed third-party source or packages. |
 | Reachable Git history | Commits reachable from repository refs | Contains personal/workstation identity references; owner must approve exposure or authorize a rewrite. |
