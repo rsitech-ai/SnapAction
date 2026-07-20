@@ -113,6 +113,58 @@ import Testing
     #expect(!raw.contains(privateIdentifier))
 }
 
+@Test func legacyHistoryIsMigratedAndSensitivePayloadIsRemovedFromDisk() throws {
+    struct LegacyEntry: Codable {
+        var id: UUID
+        var capturedAt: Date
+        var ocrText: String
+        var candidates: [ActionCandidate]
+        var result: ActionExecutionResult?
+    }
+
+    let directory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SnapActionLegacyHistory-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let url = directory.appendingPathComponent("history.json")
+    let privateOCR = "PRIVATE LEGACY OCR 2cc4e8"
+    let privateNotes = "PRIVATE LEGACY NOTES 97f20a"
+    let privateIdentifier = "legacy-event-identifier-52b3"
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let legacy = LegacyEntry(
+        id: UUID(),
+        capturedAt: Date(),
+        ocrText: privateOCR,
+        candidates: [
+            ActionCandidate(
+                kind: .calendarEvent,
+                title: "Migrated event",
+                confidence: 1,
+                sourceText: privateOCR,
+                fields: [.notes: privateNotes],
+                validationState: .valid
+            )
+        ],
+        result: .createdEvent(id: privateIdentifier)
+    )
+    try encoder.encode([legacy]).write(to: url, options: .atomic)
+
+    let store = try HistoryStore(fileURL: url)
+    let loaded = try store.load()
+    let rewritten = String(decoding: try Data(contentsOf: url), as: UTF8.self)
+
+    #expect(loaded.count == 1)
+    #expect(loaded.first?.title == "Migrated event")
+    #expect(loaded.first?.kind == .calendarEvent)
+    #expect(loaded.first?.outcome == .createdEvent)
+    #expect(!rewritten.contains(privateOCR))
+    #expect(!rewritten.contains(privateNotes))
+    #expect(!rewritten.contains(privateIdentifier))
+    #expect(!rewritten.contains("candidates"))
+    #expect(!rewritten.contains("ocrText"))
+}
+
 @Test func corruptHistoryIsDeletedWithoutSensitiveBackup() throws {
     let directory = FileManager.default.temporaryDirectory
         .appendingPathComponent("SnapActionCorruptHistory-\(UUID().uuidString)", isDirectory: true)
