@@ -106,7 +106,9 @@ import Testing
     let reloaded = try store.load()
 
     #expect(reloaded.count == 1)
-    #expect(raw.contains("Meet Jamie tomorrow at 10"))
+    #expect(raw.contains("Meet Jamie"))
+    #expect(!raw.contains("Meet Jamie tomorrow at 10"))
+    #expect(!raw.contains("event-1"))
     #expect(!raw.localizedCaseInsensitiveContains("screenshot"))
     #expect(!raw.contains("png"))
     #expect(!raw.contains("base64"))

@@ -12,8 +12,8 @@ func historyLoadPrunesEntriesOlderThanTheCalendarDayCutoff() throws {
 
     let loaded = try fixture.store.load()
 
-    #expect(loaded.map(\.ocrText) == ["Oldest retained day"])
-    #expect(try fixture.decodeRaw().map(\.ocrText) == ["Oldest retained day"])
+    #expect(loaded.map(\.title) == ["Oldest retained day"])
+    #expect(try fixture.decodeRaw().map(\.title) == ["Oldest retained day"])
 }
 
 @Test
@@ -24,7 +24,7 @@ func oneDayRetentionKeepsOnlyTheCurrentCalendarDate() throws {
     let yesterday = fixture.entry(daysAgo: 1, hour: 23, title: "Yesterday")
     try fixture.writeRaw([today, yesterday])
 
-    #expect(try fixture.store.load().map(\.ocrText) == ["Today"])
+    #expect(try fixture.store.load().map(\.title) == ["Today"])
 }
 
 @Test
@@ -35,7 +35,7 @@ func historyAppendAppliesTheCurrentRetentionSetting() throws {
     try fixture.store.append(fixture.entry(daysAgo: 2, hour: 12, title: "Expired append"))
     try fixture.store.append(fixture.entry(daysAgo: 0, hour: 9, title: "Current append"))
 
-    #expect(try fixture.store.load().map(\.ocrText) == ["Current append"])
+    #expect(try fixture.store.load().map(\.title) == ["Current append"])
 }
 
 @Test
@@ -113,7 +113,12 @@ private struct RetentionFixture {
     }
 
     func entry(daysAgo: Int, hour: Int, title: String) -> HistoryEntry {
-        HistoryEntry(document: document(daysAgo: daysAgo, hour: hour, text: title), candidates: [])
+        HistoryEntry(
+            capturedAt: document(daysAgo: daysAgo, hour: hour, text: title).capturedAt,
+            title: title,
+            kind: .textTable,
+            outcome: .unknown
+        )
     }
 
     func writeRaw(_ entries: [HistoryEntry]) throws {

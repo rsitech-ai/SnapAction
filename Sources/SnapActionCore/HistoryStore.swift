@@ -1,11 +1,54 @@
 import Foundation
 
+public enum HistoryOutcome: String, Codable, Equatable, Sendable {
+    case createdReminder
+    case createdEvent
+    case copiedToClipboard
+    case failed
+    case unknown
+
+    public init(_ result: ActionExecutionResult?) {
+        switch result {
+        case .createdReminder: self = .createdReminder
+        case .createdEvent: self = .createdEvent
+        case .copiedToClipboard: self = .copiedToClipboard
+        case .failed: self = .failed
+        case nil: self = .unknown
+        }
+    }
+
+    public var displayMessage: String {
+        switch self {
+        case .createdReminder: "Reminder created"
+        case .createdEvent: "Calendar event created"
+        case .copiedToClipboard: "Copied to clipboard"
+        case .failed: "Action failed"
+        case .unknown: "Action completed"
+        }
+    }
+}
+
 public struct HistoryEntry: Codable, Equatable, Identifiable, Sendable {
     public var id: UUID
     public var capturedAt: Date
-    public var ocrText: String
-    public var candidates: [ActionCandidate]
-    public var result: ActionExecutionResult?
+    public var title: String
+    public var kind: ActionKind
+    public var outcome: HistoryOutcome
+
+    public init(
+        id: UUID = UUID(),
+        capturedAt: Date,
+        title: String,
+        kind: ActionKind,
+        outcome: HistoryOutcome
+    ) {
+        self.id = id
+        self.capturedAt = capturedAt
+        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.title = normalizedTitle.isEmpty ? kind.displayName : normalizedTitle
+        self.kind = kind
+        self.outcome = outcome
+    }
 
     public init(
         id: UUID = UUID(),
@@ -13,11 +56,14 @@ public struct HistoryEntry: Codable, Equatable, Identifiable, Sendable {
         candidates: [ActionCandidate],
         result: ActionExecutionResult? = nil
     ) {
-        self.id = id
-        self.capturedAt = document.capturedAt
-        self.ocrText = document.normalizedText
-        self.candidates = candidates
-        self.result = result
+        let candidate = candidates.first
+        self.init(
+            id: id,
+            capturedAt: document.capturedAt,
+            title: candidate?.title ?? "Captured text",
+            kind: candidate?.kind ?? .textTable,
+            outcome: HistoryOutcome(result)
+        )
     }
 }
 
@@ -47,6 +93,7 @@ public struct HistoryStore: Sendable {
 
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try PersistencePermissions.restrictDirectory(directory)
         self.retentionPreferences = try HistoryRetentionPreferences(
             fileURL: fileURL.deletingPathExtension().appendingPathExtension("retention.json")
         )
@@ -81,20 +128,34 @@ public struct HistoryStore: Sendable {
         }
     }
 
+    public func deleteAll() throws {
+        try coordinator.withLock {
+            try write([])
+        }
+    }
+
     private func loadLocked() throws -> [HistoryEntry] {
         let entries: [HistoryEntry]
+        let requiresMigration: Bool
         do {
             let data = try Data(contentsOf: fileURL)
-            entries = try decoder.decode([HistoryEntry].self, from: data)
+            if let currentEntries = try? decoder.decode([HistoryEntry].self, from: data) {
+                entries = currentEntries
+                requiresMigration = false
+            } else {
+                let legacyEntries = try decoder.decode([LegacyHistoryEntry].self, from: data)
+                entries = legacyEntries.map(HistoryEntry.init(legacy:))
+                requiresMigration = true
+            }
         } catch {
-            try recoverCorruptFile()
+            try deleteSensitiveHistoryArtifacts()
             try Data("[]".utf8).write(to: fileURL, options: .atomic)
             try PersistencePermissions.restrictFile(fileURL)
             return []
         }
 
         let retained = retainedEntries(from: entries)
-        if retained != entries {
+        if requiresMigration || retained != entries {
             try write(retained)
         }
         return retained
@@ -115,15 +176,21 @@ public struct HistoryStore: Sendable {
     private func write(_ entries: [HistoryEntry]) throws {
         let data = try encoder.encode(entries)
         try data.write(to: fileURL, options: .atomic)
+        try PersistencePermissions.restrictDirectory(fileURL.deletingLastPathComponent())
         try PersistencePermissions.restrictFile(fileURL)
     }
 
-    private func recoverCorruptFile() throws {
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
-        let backup = fileURL.deletingPathExtension()
-            .appendingPathExtension("corrupt-\(Int(Date().timeIntervalSince1970)).json")
-        try? FileManager.default.removeItem(at: backup)
-        try FileManager.default.moveItem(at: fileURL, to: backup)
+    private func deleteSensitiveHistoryArtifacts() throws {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: fileURL.path) {
+            try fileManager.removeItem(at: fileURL)
+        }
+        let directory = fileURL.deletingLastPathComponent()
+        let prefix = "\(fileURL.deletingPathExtension().lastPathComponent).corrupt-"
+        for sibling in try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+        where sibling.lastPathComponent.hasPrefix(prefix) {
+            try fileManager.removeItem(at: sibling)
+        }
     }
 }
 
@@ -150,6 +217,7 @@ private final class HistoryRetentionPreferences: @unchecked Sendable {
         self.fileURL = fileURL
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try PersistencePermissions.restrictDirectory(directory)
 
         if FileManager.default.fileExists(atPath: fileURL.path) {
             do {
@@ -160,10 +228,9 @@ private final class HistoryRetentionPreferences: @unchecked Sendable {
                     try Self.write(normalizedDays, to: fileURL)
                 }
             } catch {
-                let backup = fileURL.deletingPathExtension()
-                    .appendingPathExtension("corrupt-\(Int(Date().timeIntervalSince1970)).json")
-                try? FileManager.default.removeItem(at: backup)
-                try? FileManager.default.moveItem(at: fileURL, to: backup)
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    try FileManager.default.removeItem(at: fileURL)
+                }
                 self.storedDays = 30
                 try Self.write(30, to: fileURL)
             }
@@ -198,5 +265,26 @@ private final class HistoryRetentionPreferences: @unchecked Sendable {
         let data = try encoder.encode(Payload(days: days))
         try data.write(to: fileURL, options: .atomic)
         try PersistencePermissions.restrictFile(fileURL)
+    }
+}
+
+private struct LegacyHistoryEntry: Codable {
+    var id: UUID
+    var capturedAt: Date
+    var ocrText: String
+    var candidates: [ActionCandidate]
+    var result: ActionExecutionResult?
+}
+
+private extension HistoryEntry {
+    init(legacy entry: LegacyHistoryEntry) {
+        let candidate = entry.candidates.first
+        self.init(
+            id: entry.id,
+            capturedAt: entry.capturedAt,
+            title: candidate?.title ?? "Captured text",
+            kind: candidate?.kind ?? .textTable,
+            outcome: HistoryOutcome(entry.result)
+        )
     }
 }
