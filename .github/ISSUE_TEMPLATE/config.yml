@@ -1,2 +1,8 @@
 blank_issues_enabled: false
-contact_links: []
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/rsitech-ai/SnapAction/security/advisories/new
+    about: Report a suspected vulnerability privately.
+  - name: RSI Tech
+    url: https://rsitech.ai
+    about: Visit the maintainer website for project information.

@@ -27,6 +27,8 @@ def build_sbom() -> dict:
     target_components = [
         {
             "bom-ref": f"internal:{target}",
+            "copyright": "Copyright 2026 Rafal Sikora",
+            "licenses": [{"license": {"id": "Apache-2.0"}}],
             "name": target,
             "properties": [
                 property_value("snapaction.relationship", "internal-source-target"),
@@ -78,7 +80,10 @@ def build_sbom() -> dict:
         "metadata": {
             "component": {
                 "bom-ref": "application:SnapAction",
+                "copyright": "Copyright 2026 Rafal Sikora",
+                "licenses": [{"license": {"id": "Apache-2.0"}}],
                 "name": application["name"],
+                "publisher": "RSI Tech",
                 "properties": [
                     property_value("snapaction.build-system", application["build_system"]),
                     property_value("snapaction.platform", application["platform"]),

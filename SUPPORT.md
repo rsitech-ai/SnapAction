@@ -1,7 +1,7 @@
 # Support
 
-SnapAction is not yet published as an open-source project and has no guaranteed support commitment.
+SnapAction is an open-source RSI Tech project provided without a guaranteed support commitment.
 
-If a public issue tracker is enabled later, use the structured bug template only for reproducible, non-sensitive product defects. Remove OCR text, clipboard contents, screenshots containing private information, account details, credentials, signing material, and workstation paths.
+Use the structured GitHub issue templates for reproducible, non-sensitive defects and focused feature proposals. Remove OCR text, clipboard contents, private screenshots, account details, credentials, signing material, and workstation paths.
 
-Do not report vulnerabilities in public issues, pull requests, discussions, or logs. No approved private security-reporting channel exists yet. Publication remains blocked until an owner designates and documents one.
+For project questions that should not be public, contact [info@rsitech.ai](mailto:info@rsitech.ai). Report vulnerabilities only through the private route in [SECURITY.md](SECURITY.md), never in public issues, pull requests, discussions, or logs.

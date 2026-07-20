@@ -14,58 +14,22 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPO_ROOT / "docs/open-source/OPEN_SOURCE_MANIFEST.json"
 SBOM_PATH = REPO_ROOT / "artifacts/sbom/snapaction.cdx.json"
-
-MANUAL_BLOCKERS = (
-    {
-        "code": "DCO_DECISION_REQUIRED",
-        "detail": "No contributor certificate policy has been adopted; an owner or legal decision is required.",
-        "gate": "legal",
-        "scope": "external_manual_gates",
-    },
-    {
-        "code": "FORMAL_SECURITY_SCAN_SKIPPED_BY_OWNER_REQUEST",
-        "detail": "The owner explicitly requested completion without a formal security scan; publication remains blocked unless that risk is separately accepted or a scan is completed and reviewed.",
-        "gate": "security",
-        "scope": "external_manual_gates",
-    },
-    {
-        "code": "GOVERNANCE_APPROVAL_REQUIRED",
-        "detail": "No public governance and maintainer authority model has owner approval.",
-        "gate": "owner",
-        "scope": "external_manual_gates",
-    },
-    {
-        "code": "LICENSE_APPROVAL_REQUIRED",
-        "detail": "No project license has owner or legal approval.",
-        "gate": "legal",
-        "scope": "external_manual_gates",
-    },
-    {
-        "code": "SECURITY_CONTACT_REQUIRED",
-        "detail": "No approved public security-reporting contact or intake channel is recorded.",
-        "gate": "owner",
-        "scope": "external_manual_gates",
-    },
-    {
-        "code": "TRADEMARK_DECISION_REQUIRED",
-        "detail": "Project naming and trademark permissions have not received owner or legal approval.",
-        "gate": "legal",
-        "scope": "external_manual_gates",
-    },
-)
+APACHE_2_LICENSE_SHA256 = "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+APPROVED_GIT_EMAIL = "24563931+s1korrrr@users.noreply.github.com"
 
 
 def publication_blockers(
     personal_path_documents: list[str],
     history_has_personal_paths: bool,
-    root_license_present: bool = False,
+    unexpected_history_emails: list[str] | None = None,
+    apache_license_valid: bool = True,
 ) -> list[dict[str, str]]:
-    blockers = [dict(blocker) for blocker in MANUAL_BLOCKERS]
+    blockers: list[dict[str, str]] = []
     if personal_path_documents:
         blockers.append(
             {
                 "code": "CURRENT_TREE_PERSONAL_PATH_REVIEW_REQUIRED",
-                "detail": "Tracked historical audit documents still contain workstation-specific absolute paths and require cleanup or explicit acceptance.",
+                "detail": "Tracked text contains workstation-specific absolute paths.",
                 "gate": "owner",
                 "scope": "current_tree",
             }
@@ -73,17 +37,26 @@ def publication_blockers(
     if history_has_personal_paths:
         blockers.append(
             {
-                "code": "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
-                "detail": "Reachable Git history contains workstation identity/path references; the owner must approve exposure or authorize a history rewrite.",
+                "code": "PUBLISHED_HISTORY_PATH_REWRITE_REQUIRED",
+                "detail": "Published HEAD history still contains workstation-specific absolute paths.",
                 "gate": "owner",
                 "scope": "reachable_history",
             }
         )
-    if not root_license_present:
+    if unexpected_history_emails:
         blockers.append(
             {
-                "code": "ROOT_LICENSE_MISSING",
-                "detail": "The repository has no adopted root license file and therefore grants no open-source license.",
+                "code": "PUBLISHED_HISTORY_IDENTITY_REWRITE_REQUIRED",
+                "detail": "Published HEAD history contains author or committer email outside the approved noreply identity.",
+                "gate": "owner",
+                "scope": "reachable_history",
+            }
+        )
+    if not apache_license_valid:
+        blockers.append(
+            {
+                "code": "APACHE_2_LICENSE_INVALID",
+                "detail": "The root LICENSE does not match the canonical Apache License 2.0 text.",
                 "gate": "legal",
                 "scope": "current_tree",
             }
@@ -165,12 +138,33 @@ def tracked_personal_path_documents() -> list[str]:
 def reachable_history_has_personal_paths() -> bool:
     user_home_marker = "/" + "Users/"
     result = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "log", "--all", f"-S{user_home_marker}", "--format=%H"],
+        ["git", "-C", str(REPO_ROOT), "log", "HEAD", f"-S{user_home_marker}", "--format=%H"],
         check=True,
         capture_output=True,
         text=True,
     )
     return bool(result.stdout.strip())
+
+
+def reachable_history_unapproved_emails() -> list[str]:
+    result = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "log", "HEAD", "--format=%ae%n%ce"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return sorted(
+        {
+            email.strip()
+            for email in result.stdout.splitlines()
+            if email.strip() and email.strip() != APPROVED_GIT_EMAIL
+        }
+    )
+
+
+def apache_2_license_valid(repo_root: Path = REPO_ROOT) -> bool:
+    license_path = repo_root / "LICENSE"
+    return license_path.is_file() and sha256(license_path) == APACHE_2_LICENSE_SHA256
 
 
 def evidence_input_hashes() -> dict[str, str]:
@@ -195,6 +189,8 @@ def evidence_input_hashes() -> dict[str, str]:
         REPO_ROOT / ".github/dependabot.yml",
         REPO_ROOT / "CHANGELOG.md",
         REPO_ROOT / "CONTRIBUTING.md",
+        REPO_ROOT / "LICENSE",
+        REPO_ROOT / "NOTICE",
         REPO_ROOT / "PRIVACY.md",
         REPO_ROOT / "README.md",
         REPO_ROOT / "RELEASING.md",
@@ -221,13 +217,13 @@ def build_manifest() -> dict[str, Any]:
     frameworks = [module for module in source_imports() if module not in internal_targets()]
     personal_path_documents = tracked_personal_path_documents()
     history_has_personal_paths = reachable_history_has_personal_paths()
-    root_license_present = any(
-        (REPO_ROOT / name).is_file() for name in ("LICENSE", "LICENSE.md", "LICENSE.txt")
-    )
+    unexpected_history_emails = reachable_history_unapproved_emails()
+    license_valid = apache_2_license_valid()
     blockers = publication_blockers(
         personal_path_documents,
         history_has_personal_paths,
-        root_license_present,
+        unexpected_history_emails,
+        license_valid,
     )
     return {
         "application": {
@@ -258,30 +254,39 @@ def build_manifest() -> dict[str, Any]:
                 "status": "REVIEW_REQUIRED" if personal_path_documents else "REVIEWED",
             },
             "external_manual_gates": {
-                "status": "BLOCKED",
-                "unresolved_count": len([blocker for blocker in blockers if blocker["scope"] == "external_manual_gates"]),
+                "status": "APPROVED",
+                "unresolved_count": 0,
             },
             "reachable_history": {
                 "personal_path_exposure_detected": history_has_personal_paths,
-                "owner_exposure_decision": None,
-                "status": "OWNER_DECISION_REQUIRED",
+                "approved_git_email": APPROVED_GIT_EMAIL,
+                "unexpected_emails": unexpected_history_emails,
+                "owner_exposure_decision": "REWRITE_AUTHORIZED",
+                "status": "REVIEW_REQUIRED" if history_has_personal_paths or unexpected_history_emails else "REVIEWED",
             },
         },
+        "governance": {
+            "copyright_owner": "Rafal Sikora",
+            "maintainer": "RSI Tech",
+            "project_contact": "info@rsitech.ai",
+            "website": "https://rsitech.ai",
+        },
         "licensing": {
-            "approved_spdx_id": None,
-            "dco_adopted": False,
-            "proposed_spdx_id": None,
-            "root_license_present": root_license_present,
+            "approved_spdx_id": "Apache-2.0",
+            "dco_adopted": True,
+            "license_sha256": APACHE_2_LICENSE_SHA256,
+            "root_license_present": (REPO_ROOT / "LICENSE").is_file(),
+            "root_license_valid": license_valid,
         },
         "publication": {
             "blockers": blockers,
-            "status": "BLOCKED",
+            "status": "BLOCKED" if blockers else "READY_WITH_ACCEPTED_RISK",
         },
-        "schema_version": 1,
+        "schema_version": 2,
         "security": {
             "credential_review": {
                 "current_reachable_history_status": "NOT_FORMALLY_SCANNED",
-                "current_repository_status": "UNVERIFIED",
+                "current_repository_status": "NOT_FORMALLY_SCANNED",
                 "formal_scan_coverage": False,
                 "historical_observation": {
                     "anchor_commit": "e1f7c0a3c555e941241f710b53bb61dc04e189c3",
@@ -292,9 +297,11 @@ def build_manifest() -> dict[str, Any]:
             },
             "formal_codex_security_scan": {
                 "completed": False,
-                "status": "SKIPPED_BY_OWNER_REQUEST",
+                "risk_accepted_by_owner": True,
+                "risk_accepted_date": "2026-07-20",
+                "status": "SKIPPED_BY_OWNER_ACCEPTED_RISK",
             },
-            "security_contact": None,
+            "security_contact": "info@rsitech.ai",
         },
         "source_manifest": {
             "meaning": "source-declared SwiftPM manifest compatibility requirement; not installed toolchain evidence",

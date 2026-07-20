@@ -7,4 +7,4 @@ The source-build path is the unofficial community distribution lane documented i
 - build system: Swift Package Manager
 - platform: macOS 26 or later
 
-`Config/Community.example.env` contains public example values. `script/build_and_run.sh --print-config` validates configuration without building or launching the app. A community build is not signed, notarized, sandboxed, or eligible for App Store upload merely because it compiles.
+`Config/Community.example.env` contains public example values. `script/build_and_run.sh --print-config` validates configuration without building or launching the app. A community build is ad-hoc signed for local integrity checks; it is not Developer ID signed, notarized, sandboxed, or eligible for App Store upload merely because it compiles. The official direct-download lane is `script/package_release.sh`.

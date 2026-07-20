@@ -1,19 +1,19 @@
 # Roadmap
 
-This roadmap describes technical direction, not delivery commitments or maintainer approval.
+This roadmap describes RSI Tech's current technical direction, not delivery commitments.
 
-## Before public source publication
+## Publication follow-through
 
-- obtain an owner/legal license decision and adopt the approved root license;
-- decide the contributor-certificate, governance, naming, and trademark model;
-- establish an approved private security-reporting channel;
-- resolve the skipped formal security-scan gate through completed evidence or explicit risk acceptance;
-- decide whether reachable-history workstation references are acceptable or require a separately authorized rewrite.
+- complete and verify the authorized noreply/workstation-path history rewrite;
+- restore hosted CI after the GitHub account billing/spending-limit blocker is resolved;
+- establish branch protection after a real hosted green run;
+- perform the deferred formal security scan in a future hardening pass.
 
 ## Product hardening
 
-- prove the community build on a clean Mac;
-- add a signed, sandboxed, notarized distribution path before any release-candidate claim;
+- prove the Developer ID direct-download build on a clean Mac;
+- add notarization credentials and a stapled-ticket path;
+- keep sandbox/App Store work as a separate distribution channel;
 - verify Screen Recording, Calendar, and Reminders permission flows;
 - complete VoiceOver, appearance, resize, and performance checks.
 

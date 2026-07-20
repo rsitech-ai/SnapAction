@@ -1,29 +1,23 @@
 # Releasing
 
-The owner has authorized a private `rsitech-ai` prerelease of the unofficial community bundle. Public release, public visibility, redistribution, official product identity, Developer ID signing, notarization, and App Store publication remain unauthorized and blocked. This document is not a grant of maintainer, signing, or legal authority.
+RSI Tech maintains release authority for SnapAction. Public releases must come from a reviewed and merged `main` commit with a clean source tree.
 
-## Private preview procedure
+## Direct-download procedure
 
-1. Start from the reviewed and merged `main` commit.
-2. Run every repository check, including `bash script/test_release_package.sh`.
-3. Run `bash script/package_release.sh --output <clean-directory>`.
-4. Verify the generated SHA-256 sidecar, archive contents, embedded source revision, and ad-hoc signature.
-5. Tag the exact verified commit as `v0.1.0` and publish a private GitHub prerelease containing the ZIP, checksum, and source SBOM.
-6. Download the published assets again and repeat checksum, extraction, metadata, and signature verification.
+1. Run every repository check, including `bash script/test_release_package.sh` and `python3 script/check_publication_gates.py`.
+2. Confirm the exact local and remote `main` commit and a clean Git status.
+3. Run `bash script/package_release.sh --output <clean-directory>`. The default release mode requires an `arm64` host and the installed `Developer ID Application: Rafal Sikora (2NY8A789TN)` identity.
+4. Verify the SHA-256 sidecar, archive contents, `ai.rsitech.snapaction` identifier, release configuration, embedded source revision, arm64 binary, hardened runtime, and Developer ID authority/team.
+5. Submit the archive for notarization and staple the result only when valid Apple notarization credentials are available. Never label an artifact notarized based on signing alone.
+6. Tag the exact verified commit, publish the ZIP, checksum, and source SBOM, then download and verify every published asset again.
 
-The private preview is intentionally ad-hoc signed and not notarized. Release notes and download instructions must state that macOS may show an unidentified-developer warning. Access to a private repository release is limited to GitHub users who can read the repository.
+An ad-hoc signing mode exists only for deterministic packaging tests on clean source. It is not the official release channel.
 
-## Public or official release gates
+## Authority and safety
 
-Before any public, redistributable, or official source or binary release:
-
-1. Obtain and record owner/legal approval for the license, contributor-certificate model, naming, trademark use, and governance.
-2. Adopt the approved root license and update the generated evidence. No license is selected today.
-3. Establish and test an approved private security-reporting channel.
-4. Resolve the recorded owner request to skip the formal security scan: either complete and review a scan or explicitly accept the publication risk through the project’s approval process.
-5. Resolve the reachable-history workstation-reference decision. History rewriting requires separate explicit authorization and coordination.
-6. Run every command in `docs/open-source/PUBLICATION_GATE_MATRIX.md` and require the publication checker to pass.
-7. For binaries, follow `docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md`; prove signing, sandboxing, entitlements, notarization or App Store validation, permission behavior, and clean-machine installation.
-8. Obtain explicit authority before changing visibility, publishing public releases, uploading official binaries, or announcing the project.
-
-The community build is unofficial by default. Official product identity, Team IDs, certificates, notarization credentials, App Store credentials, and private endpoints must remain outside Git.
+- Source and first-party documentation are Apache-2.0; retain `LICENSE` and `NOTICE` in redistributions.
+- Public maintenance, contribution, release, and security-response authority belongs to RSI Tech. Contact: [info@rsitech.ai](mailto:info@rsitech.ai).
+- The Apache license does not grant RSI Tech or SnapAction trademark rights beyond customary origin descriptions.
+- The initial formal Codex Security scan was explicitly skipped and accepted as residual risk by the owner. Release notes must not claim it passed.
+- Signing private keys, notarization credentials, App Store Connect credentials, and private endpoints must remain outside Git and logs.
+- The Mac App Store is a separate channel governed by `docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md`.

@@ -1,7 +1,7 @@
-# Governance review
+# Governance
 
-Status: **OWNER APPROVAL REQUIRED**.
+RSI Tech is the public maintainer and holds contribution, release, issue-triage, conduct-enforcement, and vulnerability-response authority for SnapAction. Rafal Sikora is the copyright owner for the initial work.
 
-No public maintainer roster, decision process, contribution authority, release authority, code-of-conduct enforcement owner, or vulnerability-response owner has been approved. No DCO or contributor license agreement has been adopted.
+Contributions are reviewed through GitHub pull requests and require DCO 1.1 sign-off. Maintainers decide whether a contribution fits the project, request evidence or changes, and may decline work that increases privacy, safety, maintenance, or product-scope risk.
 
-Repository contribution guidance may describe mechanics, but it must not invent legal identity or maintainer authority. Publication remains blocked until the owner records the minimum governance and contributor-certificate decisions.
+Project and confidential contact: [info@rsitech.ai](mailto:info@rsitech.ai). Website: [rsitech.ai](https://rsitech.ai).

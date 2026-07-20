@@ -63,23 +63,30 @@ class PublicationToolTests(unittest.TestCase):
             self.assertEqual(first_output.read_bytes(), second_output.read_bytes())
             self.assertNotIn(secret.encode(), first_output.read_bytes())
 
-    def test_manifest_records_truthful_fail_closed_release_state(self):
+    def test_manifest_records_approved_publication_setup_and_accepted_scan_risk(self):
         manifest = json.loads(self.generated_bytes(MANIFEST_GENERATOR, cwd="/"))
 
-        self.assertEqual(manifest["publication"]["status"], "BLOCKED")
+        expected_status = "BLOCKED" if manifest["publication"]["blockers"] else "READY_WITH_ACCEPTED_RISK"
+        self.assertEqual(manifest["publication"]["status"], expected_status)
         self.assertEqual(manifest["application"]["platform"], "macOS")
         self.assertEqual(manifest["application"]["build_system"], "Swift Package Manager")
-        self.assertIsNone(manifest["licensing"]["proposed_spdx_id"])
-        self.assertIsNone(manifest["licensing"]["approved_spdx_id"])
+        self.assertEqual(manifest["licensing"]["approved_spdx_id"], "Apache-2.0")
+        self.assertTrue(manifest["licensing"]["root_license_valid"])
+        self.assertTrue(manifest["licensing"]["dco_adopted"])
+        self.assertEqual(manifest["governance"]["maintainer"], "RSI Tech")
+        self.assertEqual(manifest["governance"]["copyright_owner"], "Rafal Sikora")
+        self.assertEqual(manifest["governance"]["website"], "https://rsitech.ai")
         self.assertEqual(manifest["dependencies"]["external_swift_packages"], [])
         self.assertEqual(manifest["dependencies"]["external_swift_package_count"], 0)
         self.assertEqual(
             manifest["security"]["formal_codex_security_scan"]["status"],
-            "SKIPPED_BY_OWNER_REQUEST",
+            "SKIPPED_BY_OWNER_ACCEPTED_RISK",
         )
         self.assertFalse(manifest["security"]["formal_codex_security_scan"]["completed"])
+        self.assertTrue(manifest["security"]["formal_codex_security_scan"]["risk_accepted_by_owner"])
+        self.assertEqual(manifest["security"]["security_contact"], "info@rsitech.ai")
         credential_review = manifest["security"]["credential_review"]
-        self.assertEqual(credential_review["current_repository_status"], "UNVERIFIED")
+        self.assertEqual(credential_review["current_repository_status"], "NOT_FORMALLY_SCANNED")
         self.assertEqual(
             credential_review["current_reachable_history_status"],
             "NOT_FORMALLY_SCANNED",
@@ -123,6 +130,11 @@ class PublicationToolTests(unittest.TestCase):
         self.assertEqual(sbom["bomFormat"], "CycloneDX")
         self.assertEqual(sbom["specVersion"], "1.6")
         self.assertEqual(sbom["metadata"]["component"]["name"], "SnapAction")
+        self.assertEqual(sbom["metadata"]["component"]["publisher"], "RSI Tech")
+        self.assertEqual(
+            sbom["metadata"]["component"]["licenses"],
+            [{"license": {"id": "Apache-2.0"}}],
+        )
         self.assertEqual(sbom["metadata"]["component"]["properties"], [
             {"name": "snapaction.build-system", "value": "Swift Package Manager"},
             {"name": "snapaction.platform", "value": "macOS"},
@@ -149,27 +161,19 @@ class PublicationToolTests(unittest.TestCase):
         self.assertNotIn("tools", sbom["metadata"])
         self.assertNotIn("installed toolchain", json.dumps(sbom).lower())
 
-    def test_gate_checker_fails_closed_with_precise_unresolved_blockers(self):
+    def test_gate_checker_matches_the_repository_derived_blocker_state(self):
         result = self.run_tool(GATE_CHECKER, cwd=REPO_ROOT / "Sources")
+        manifest = json.loads(self.generated_bytes(MANIFEST_GENERATOR, cwd="/"))
+        blockers = manifest["publication"]["blockers"]
 
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Publication gates: BLOCKED", result.stdout)
-        expected_blockers = {
-            "LICENSE_APPROVAL_REQUIRED",
-            "ROOT_LICENSE_MISSING",
-            "DCO_DECISION_REQUIRED",
-            "TRADEMARK_DECISION_REQUIRED",
-            "GOVERNANCE_APPROVAL_REQUIRED",
-            "SECURITY_CONTACT_REQUIRED",
-            "FORMAL_SECURITY_SCAN_SKIPPED_BY_OWNER_REQUEST",
-            "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
-        }
+        self.assertEqual(result.returncode, 1 if blockers else 0)
+        self.assertIn("Publication gates: BLOCKED" if blockers else "Publication gates: PASS", result.stdout)
         reported = {
             line.split(":", 1)[0].removeprefix("- ")
             for line in result.stdout.splitlines()
             if line.startswith("- ")
         }
-        self.assertEqual(reported, expected_blockers)
+        self.assertEqual(reported, {blocker["code"] for blocker in blockers})
 
     def test_repository_evidence_blockers_clear_only_when_their_evidence_is_clean(self):
         sys.path.insert(0, str(REPO_ROOT / "script"))
@@ -178,22 +182,23 @@ class PublicationToolTests(unittest.TestCase):
         finally:
             sys.path.pop(0)
 
-        clean_codes = {blocker["code"] for blocker in publication_blockers([], False)}
+        clean_codes = {blocker["code"] for blocker in publication_blockers([], False, [], True)}
         exposed_codes = {
             blocker["code"]
-            for blocker in publication_blockers(["docs/example.md"], True)
+            for blocker in publication_blockers(["docs/example.md"], True, ["personal@example.com"], True)
         }
-        licensed_codes = {
+        invalid_license_codes = {
             blocker["code"]
-            for blocker in publication_blockers([], False, root_license_present=True)
+            for blocker in publication_blockers([], False, [], False)
         }
         evidence_codes = {
             "CURRENT_TREE_PERSONAL_PATH_REVIEW_REQUIRED",
-            "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
+            "PUBLISHED_HISTORY_PATH_REWRITE_REQUIRED",
+            "PUBLISHED_HISTORY_IDENTITY_REWRITE_REQUIRED",
         }
         self.assertTrue(evidence_codes.isdisjoint(clean_codes))
         self.assertTrue(evidence_codes.issubset(exposed_codes))
-        self.assertNotIn("ROOT_LICENSE_MISSING", licensed_codes)
+        self.assertEqual(invalid_license_codes, {"APACHE_2_LICENSE_INVALID"})
 
     def test_committed_generated_files_match_fresh_generation(self):
         self.assertEqual(COMMITTED_MANIFEST.read_bytes(), self.generated_bytes(MANIFEST_GENERATOR, cwd="/"))
@@ -201,11 +206,11 @@ class PublicationToolTests(unittest.TestCase):
 
     def test_release_packager_builds_verified_zip_and_checksum_without_distribution_claims(self):
         version = "0.1.0"
-        archive_name = f"SnapAction-Community-{version}-macos-arm64.zip"
+        archive_name = f"SnapAction-{version}-macos-arm64.zip"
         with tempfile.TemporaryDirectory() as temporary_directory:
             output = Path(temporary_directory) / "release"
             result = subprocess.run(
-                ["bash", str(RELEASE_PACKAGER), "--output", str(output)],
+                ["bash", str(RELEASE_PACKAGER), "--signing-mode", "ad-hoc", "--output", str(output)],
                 cwd=REPO_ROOT,
                 capture_output=True,
                 text=True,
@@ -228,11 +233,12 @@ class PublicationToolTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(extraction.returncode, 0, extraction.stdout + extraction.stderr)
-            app = extracted / "SnapAction Community.app"
+            app = extracted / "SnapAction.app"
             plist = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
-            self.assertEqual(plist["CFBundleIdentifier"], "org.example.snapaction.community")
+            self.assertEqual(plist["CFBundleIdentifier"], "ai.rsitech.snapaction")
             self.assertEqual(plist["CFBundleShortVersionString"], version)
             self.assertEqual(plist["SnapActionBuildConfiguration"], "release")
+            self.assertEqual(plist["SnapActionDistributionChannel"], "direct-download")
             self.assertEqual(
                 plist["SnapActionSourceURL"],
                 "https://github.com/rsitech-ai/SnapAction",
@@ -254,6 +260,15 @@ class PublicationToolTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(signature.returncode, 0, signature.stdout + signature.stderr)
+            signature_details = subprocess.run(
+                ["/usr/bin/codesign", "-dvvv", str(app)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertIn("Signature=adhoc", signature_details.stderr)
+            self.assertEqual((extracted / "LICENSE").read_bytes(), (REPO_ROOT / "LICENSE").read_bytes())
+            self.assertEqual((extracted / "NOTICE").read_bytes(), (REPO_ROOT / "NOTICE").read_bytes())
             architecture = subprocess.run(
                 ["/usr/bin/lipo", "-archs", str(app / "Contents" / "MacOS" / "SnapAction")],
                 capture_output=True,
@@ -265,7 +280,7 @@ class PublicationToolTests(unittest.TestCase):
 
             second_output = Path(temporary_directory) / "release-second"
             second_result = subprocess.run(
-                ["bash", str(RELEASE_PACKAGER), "--output", str(second_output)],
+                ["bash", str(RELEASE_PACKAGER), "--signing-mode", "ad-hoc", "--output", str(second_output)],
                 cwd=REPO_ROOT,
                 capture_output=True,
                 text=True,
@@ -371,12 +386,21 @@ jobs:
         self.assertEqual(escaped, [])
         self.assertEqual(broken, [])
 
-    def test_license_gate_requires_both_adopted_file_and_recorded_owner_approval(self):
+    def test_license_gate_requires_the_canonical_apache_2_text(self):
         result = self.run_tool(POLICY_CHECKER, "--license-gate", cwd="/")
 
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("ROOT_LICENSE_MISSING", result.stdout)
-        self.assertIn("LICENSE_APPROVAL_REQUIRED", result.stdout)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "License compliance: PASS\n")
+
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import license_gate_blockers
+        finally:
+            sys.path.pop(0)
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            invalid_root = Path(temporary_directory)
+            (invalid_root / "LICENSE").write_text("Apache-2.0\n", encoding="utf-8")
+            self.assertEqual(license_gate_blockers(invalid_root), ["APACHE_2_LICENSE_INVALID"])
 
     def test_workflow_policy_rejects_unsafe_action_permissions_triggers_and_secrets(self):
         sys.path.insert(0, str(REPO_ROOT / "script"))

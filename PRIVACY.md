@@ -1,6 +1,6 @@
 # Privacy
 
-This document describes the behavior of the source and unofficial community build in this repository. It is not a privacy policy for an official or App Store distribution.
+This document describes the behavior of the source, local community builds, and the RSI Tech direct-download release. Questions may be sent to [info@rsitech.ai](mailto:info@rsitech.ai). It is not an App Store privacy disclosure.
 
 ## Processing
 
@@ -26,6 +26,6 @@ Permission denial is handled as a recoverable result and is not recorded as a su
 
 ## Distribution boundary
 
-The community archive is ad-hoc signed, not sandboxed, and not notarized. Its neutral bundle identifier and repository source metadata distinguish it from any future official distribution. No analytics, advertising SDK, crash-reporting SDK, or third-party Swift package is included in the current source manifest.
+Local community builds are ad-hoc signed with a neutral identity. The official direct-download archive uses `ai.rsitech.snapaction` and a Developer ID Application signature; each release states its notarization status. Direct-download builds are not sandboxed or App Store packages. No analytics, advertising SDK, crash-reporting SDK, or third-party Swift package is included in the current source manifest.
 
-Because no private security-reporting contact is approved, do not disclose suspected vulnerabilities in public issues. Follow [SECURITY.md](SECURITY.md) for the current intake status.
+Do not disclose suspected vulnerabilities in public issues. Follow [SECURITY.md](SECURITY.md) for private GitHub advisory and email reporting routes.

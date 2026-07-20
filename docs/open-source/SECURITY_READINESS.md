@@ -1,14 +1,9 @@
 # Security readiness
 
-Status: **BLOCKED**.
+Status: **PUBLICATION APPROVED WITH ACCEPTED RESIDUAL RISK**.
 
-Completed repository-side hardening includes minimized/expiring history, expiring clipboard cache with user-controlled clearing, final action revalidation before external writes, bounded user-facing errors, private dynamic logs, and safe community identity defaults.
+Repository-side hardening includes minimized/expiring history, expiring clipboard cache with user-controlled clearing, final action revalidation before external writes, bounded user-facing errors, payload-free operational logs, immutable workflow pins, and private vulnerability intake.
 
-Unresolved publication gates:
+Security reports may use GitHub private vulnerability reporting or `info@rsitech.ai`. The formal Codex Security scan was skipped by explicit owner direction and accepted as residual risk on 2026-07-20. No document, release, badge, or manifest may represent that scan as completed or passed.
 
-- the formal Codex Security scan was skipped by explicit owner request and is not complete;
-- no approved public security-reporting contact or private intake channel is recorded;
-- the current repository is unverified and its current reachable history is not formally scanned; the prior manual observation is anchored only to `e1f7c0a3c555e941241f710b53bb61dc04e189c3` and is not current coverage;
-- the current tracked tree has been cleaned of workstation-specific absolute paths, but the separate reachable-history identity/path exposure decision remains open.
-
-Do not invent a security contact or claim scan clearance without owner approval and evidence. `SECURITY.md` accurately records the closed intake state and does not advertise a nonexistent reporting channel.
+The prior manual no-confirmed-credential observation remains anchored to `e1f7c0a3c555e941241f710b53bb61dc04e189c3`; it is historical evidence, not current formal scan coverage.

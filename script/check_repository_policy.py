@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from publication_evidence import build_manifest
+from publication_evidence import APACHE_2_LICENSE_SHA256, apache_2_license_valid
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +46,8 @@ REQUIRED_DOCUMENTS = (
     "CHANGELOG.md",
     "Config/Community.example.env",
     "CONTRIBUTING.md",
+    "LICENSE",
+    "NOTICE",
     "PRIVACY.md",
     "README.md",
     "RELEASING.md",
@@ -392,16 +394,19 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
     contribution_path = repo_root / "CONTRIBUTING.md"
     if contribution_path.is_file():
         contribution = contribution_path.read_text(encoding="utf-8")
-        if "External contributions are not yet accepted" not in contribution:
-            issues.append(
-                PolicyIssue(
-                    "CONTRIBUTION_GATE_UNCLEAR",
-                    "CONTRIBUTING.md",
-                    "external contributions must be explicitly closed pending owner decisions",
+        for required_text in (
+            "Apache License 2.0",
+            "Developer Certificate of Origin 1.1",
+            "Signed-off-by:",
+        ):
+            if required_text not in contribution:
+                issues.append(
+                    PolicyIssue(
+                        "CONTRIBUTOR_POLICY_INCOMPLETE",
+                        "CONTRIBUTING.md",
+                        required_text,
+                    )
                 )
-            )
-        if "Signed-off-by:" in contribution or re.search(r"\b(?:DCO|CLA)\s+(?:is|has been)\s+adopted\b", contribution, re.IGNORECASE):
-            issues.append(PolicyIssue("UNAPPROVED_CONTRIBUTOR_POLICY", "CONTRIBUTING.md", "DCO or CLA adoption is not approved"))
 
     issue_templates = list((repo_root / ".github/ISSUE_TEMPLATE").glob("*.yml"))
     for template in issue_templates:
@@ -416,7 +421,7 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
             )
 
     policy_documents = [repo_root / "CONTRIBUTING.md", repo_root / "SUPPORT.md", repo_root / "RELEASING.md"]
-    placeholder_pattern = re.compile(r"(?:<[^>]*(?:email|contact)[^>]*>|TODO|TBD|security@example\.)", re.IGNORECASE)
+    placeholder_pattern = re.compile(r"(?:TODO|TBD|security@example\.)", re.IGNORECASE)
     for path in policy_documents:
         if path.is_file() and placeholder_pattern.search(path.read_text(encoding="utf-8")):
             issues.append(
@@ -427,10 +432,14 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
                 )
             )
 
-    if not (repo_root / "LICENSE").exists() and not (repo_root / "LICENSE.md").exists() and not (repo_root / "LICENSE.txt").exists():
-        license_map = (repo_root / "docs/open-source/LICENSE_MAP.md").read_text(encoding="utf-8")
-        if "does not currently grant an open-source license" not in license_map:
-            issues.append(PolicyIssue("MISSING_LICENSE_NOT_DISCLOSED", "docs/open-source/LICENSE_MAP.md", "missing root license must remain explicit"))
+    if not apache_2_license_valid(repo_root):
+        issues.append(
+            PolicyIssue(
+                "APACHE_2_LICENSE_INVALID",
+                "LICENSE",
+                f"canonical SHA-256 must be {APACHE_2_LICENSE_SHA256}",
+            )
+        )
 
     return sorted(issues, key=lambda issue: (issue.code, issue.path, issue.detail))
 
@@ -440,13 +449,7 @@ def root_license_present(repo_root: Path = REPO_ROOT) -> bool:
 
 
 def license_gate_blockers(repo_root: Path = REPO_ROOT) -> list[str]:
-    blockers: list[str] = []
-    if not root_license_present(repo_root):
-        blockers.append("ROOT_LICENSE_MISSING")
-    approved_spdx_id = build_manifest()["licensing"]["approved_spdx_id"]
-    if not approved_spdx_id:
-        blockers.append("LICENSE_APPROVAL_REQUIRED")
-    return blockers
+    return [] if apache_2_license_valid(repo_root) else ["APACHE_2_LICENSE_INVALID"]
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -468,7 +471,7 @@ def main() -> int:
             return 0
         print(
             f"License compliance: BLOCKED ({', '.join(blockers)}) - "
-            "no owner-approved root license has been adopted and recorded."
+            "the root license does not match canonical Apache-2.0."
         )
         return 1
 

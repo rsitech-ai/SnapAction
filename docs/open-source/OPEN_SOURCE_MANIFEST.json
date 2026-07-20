@@ -31,23 +31,25 @@
   "evidence_inputs": {
     ".editorconfig": "78d761036fed76918fb800a61f382456ef27b1c7455549fc7d99e24055f622c7",
     ".gitattributes": "81f64b9c85522a501494b741d4632172c66693864072c6caacef22682d36a12e",
-    ".github/ISSUE_TEMPLATE/bug.yml": "e911072b4d6b2b16603e67a45b765eb1890e96f86d780948b13e796dc2636ad0",
-    ".github/ISSUE_TEMPLATE/config.yml": "8b09e7df09fc7534371988062769ee427af2954a02c04c763e8a8005be0f2be4",
-    ".github/ISSUE_TEMPLATE/feature.yml": "e6df811f810a3282bb83d696ac3e9279758e69eee7b7a1b17c269694825fbc3e",
+    ".github/ISSUE_TEMPLATE/bug.yml": "d21514f1d60b8a01b030774a7e460f5da2d065c87bacafbb914f7b53cbdce3fa",
+    ".github/ISSUE_TEMPLATE/config.yml": "a0e53b1e5a5efb6ae0066223717059283b6d19bc8a131d048a6cc18d0b8b8aa3",
+    ".github/ISSUE_TEMPLATE/feature.yml": "b00ff3c482a61a14614cd1d5888929156c6285bb1f895b6b91d8453543ae7485",
     ".github/dependabot.yml": "9211f882c87e73944a7f4435e119e9a6100cc5b94c446647cb20a027a7e976f5",
-    ".github/pull_request_template.md": "9baa1313281438312077c900b47b33e8c7b2f6e94af958f17356b6e224e32352",
+    ".github/pull_request_template.md": "d4acf26eb97b0d019b70aae4ad33f5841e1499a7ae59068ac6d41a410b3f880e",
     ".github/workflows/ci.yml": "55ab0bd4f01df8492a0aa83eee466cd55cb913cf987c60bb590c528891ec6abb",
     ".gitignore": "af94b3832c2204218a15e2355abb073cc8e36d64fa5cc4977e1eb0dd63f584d6",
-    "CHANGELOG.md": "959aa37cb3b12633a7d5cd9e9259e5fac2286492249c8304db0551ae1c6941b1",
-    "CONTRIBUTING.md": "8f242baf915c5423c30cf232f5c27ff18d52bd0b293c74922305bdc25e1bbd2e",
+    "CHANGELOG.md": "8d2d0ddfdd2e109f08dbf1a267c54f69b2c3896127ece878cc08b754b4d7b7f3",
+    "CONTRIBUTING.md": "1d1450066a05a68f3a653191f0ccdaa4a4280cb598021ed53924196e001e4070",
     "Config/Community.example.env": "5ae7f815276532fd07bee1ff4c71ed8264099895dddefd608841bef8f9182f3f",
-    "PRIVACY.md": "144eef138754589303c6ab02024917ca54d9bad8cca9456cb7139dcee46042fa",
+    "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "NOTICE": "e3b64f362f8d69cf14f2cb4198b2e643d92c78494f30c39a96484808563afed9",
+    "PRIVACY.md": "73470d37a5ed0c0c2685056b263a260224a7f2ac5c1c00065621eac7e84409a0",
     "Package.swift": "267545c2922beecaf508bc7c78ea0cea329804989b4fdf445dcc9e9f7b62ccd0",
-    "README.md": "097cbd0a756b312262b17f51983372fcdc597b48a1fddd31e95983c4d755f2a4",
-    "RELEASING.md": "3e9643aacf9dc8ae6e3395c1c2e2a62e785cce7cb4696f15758ed3ce078f7405",
-    "ROADMAP.md": "479197ae941c0e1b4293715518c54344041f57b5aea1d8937825430bd79111fe",
-    "SECURITY.md": "a909b73f8f499f9d53f01f2d4e5c72cbf9ed6864d86b6cd00dbb16cf02a3f7bd",
-    "SUPPORT.md": "46985b14bf5e8634408bc92b62f17ff5b8b0fe6e1ab8041c0ea9060b06868229",
+    "README.md": "c42973c8ec08ba1cbf92d7149bbdb857c7e047f11140630a8602b8dab57e4b9f",
+    "RELEASING.md": "deb1efac138a1d686c232349234bd89700b14afc44d749073231f207474553c9",
+    "ROADMAP.md": "43b54db2f5edfa4d1a43254e576751c5877d9e80d8cad509eb7c885d80130d96",
+    "SECURITY.md": "0c165b933abf0e58efc244f0432471ca95f30d0176d97c115ebe005ecfff2252",
+    "SUPPORT.md": "3484dbd33dd3e002a0520cb5b29dda02fa95ebabf98d36db2e9f4f861672364b",
     "Sources/SnapActionApp/AmbientSignalBackground.swift": "399aba339041302b309291f86d4fda0aa3129ac245c0759e215a627d15dbc1fe",
     "Sources/SnapActionApp/AppLaunchState.swift": "9f44770164e9106329c3229cabafd3c809b94a435aad12c159bd996a6df52baf",
     "Sources/SnapActionApp/AppState.swift": "28459b5412fdd7ba9c5b02126ba8068734cde076359013e515fb92b090105037",
@@ -90,33 +92,33 @@
     "Tests/SnapActionCoreTests/HistoryRetentionTests.swift": "7d3c3b420014017ab8297120f1b96b0a5991c809a925f40660b49efe63f86dbe",
     "Tests/SnapActionCoreTests/PersistenceHardeningTests.swift": "af14e2378bd5f0ea99e384ea5b0aa9f9710e32975775e9c9a5c619407ca87213",
     "Tests/SnapActionCoreTests/SnapActionCoreTests.swift": "e49343ce33fae0f3eefbc9c9018de69aecf48345e5e225078328697afcabd2df",
-    "docs/build/README.md": "3c8a581469d61e40df43ca15a63e39094b560aa36d5c8485ae5546c11627bf2c",
+    "docs/build/README.md": "21209bc3198a13377a62c4f873a53b741c4623edfdc6dc6c341ad793dd0e53ef",
     "docs/community-build/README.md": "71397a54b670820a26da6512e841ff67e49bbda1745afdab7cc9b30640eea53c",
-    "docs/open-source/BLOCKERS.md": "5405596c142d0cc175e58f4fccdd8a547131aef68b23eda60175f6824cb20930",
-    "docs/open-source/COMMUNITY_BUILD.md": "602249b783191bb29d01a2edd1de058e1d621e48771dbab10b3181435564258e",
-    "docs/open-source/GITHUB_CONFIGURATION.md": "04ba9e42a6bf6671762b2bf22c96d5f6675a17cb8a8befe66531bdee7299b008",
-    "docs/open-source/GOVERNANCE_REVIEW.md": "87633550ec15472c2ae0d0e5c08845f8b4e1268493e933e7837c60b9a32be6e7",
-    "docs/open-source/GO_NO_GO.md": "47ee3ad661c66345732085808ac4620880c55548093a3023b1ae532e7860e9cd",
-    "docs/open-source/IP_INVENTORY.md": "620a426c4ed06a5272f71a1c5697b4f83294a2fa8c9340b0ed0f8b8747ab1aec",
-    "docs/open-source/LICENSE_MAP.md": "0fdc459b18a476fd7e3c66ffaa527e17aa2f55a09ada383b5fe8a022dd7c6c09",
-    "docs/open-source/OPEN_SOURCE_STATUS.md": "d3fd087a6abb50a29e7b9a859a6ceb139c7253fe76892c53586a04d59749e03a",
-    "docs/open-source/PROFILE_PROPOSAL.md": "6052e5f8bb7d701671b7e744de2b85f332fe110f6138faa66b0a73d76a46439a",
-    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "15269a6ed1a5c7e7af3fc50001159791c317547fb1e71ad8e07f8fcf88dbcb87",
-    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "6cab6d4d38454e1d00246874675135c04f462c19a046d827e3bd327b0844c3f5",
-    "docs/open-source/SECRET_AUDIT.md": "a1f879afd900e46310308d0eb3ba191ba3f8b257d86e6aa3c1f6bc093ad6cb88",
-    "docs/open-source/SECURITY_READINESS.md": "55272136de806ddf14f11e859497f906687dce5a20c38914a0d5627b93e41939",
+    "docs/open-source/BLOCKERS.md": "0f48374ba4de274300d86a56d12ecda5932ab434c3b481957776e68868715488",
+    "docs/open-source/COMMUNITY_BUILD.md": "eb830ae3f39a212bacd7138cfb806e0c428486110a49c4d3178b25f7a7f0e584",
+    "docs/open-source/GITHUB_CONFIGURATION.md": "bad3c88f6b2790c6f7d8928e53329eb3cb9d22781b68356d6a454705ee0f00e8",
+    "docs/open-source/GOVERNANCE_REVIEW.md": "a947634596e26b417c28d2b2dae799149948061daff61faed91830770e940918",
+    "docs/open-source/GO_NO_GO.md": "7a301bc651176a6e01ff5b315735c39869ccdd480585003cfff24da453396aef",
+    "docs/open-source/IP_INVENTORY.md": "01566e738c10c1ba073be646204fa813f10686bb9f7d538f096083b09e3e3e67",
+    "docs/open-source/LICENSE_MAP.md": "a930ff9aa00860eab0247b33486abd26d24847c6dc6037d74ccaa18fcd3f1e9b",
+    "docs/open-source/OPEN_SOURCE_STATUS.md": "68a3fb0df4b9bbefb85ace33026b4174501d675b2fef1ae5297b24145e2f7a8e",
+    "docs/open-source/PROFILE_PROPOSAL.md": "7a66dbb2bedc20c9c1f1d984a9b9036cd3e0822eb0176d37d435c1f9c97913ce",
+    "docs/open-source/PUBLICATION_GATE_MATRIX.md": "58303d06e824bf7e4ac227cfa1850be9a735c70c207303c858e6130c4a454549",
+    "docs/open-source/PUBLIC_PRIVATE_BOUNDARY.md": "a53f156a8c62a499e215341be461aa6fcc07bb6158d9bc6b29fda219c150c3e7",
+    "docs/open-source/SECRET_AUDIT.md": "cd3ddcee7f2d97dbff90823eae98a958db15714afc2d73d1628dac4a98e55653",
+    "docs/open-source/SECURITY_READINESS.md": "812af89c66ccda53bf6156607a311cb076500dfc06b05f71f7cc093f1f6afa08",
     "docs/open-source/SUPPLY_CHAIN_READINESS.md": "a2a3aecae67cf107ef595cb08f41971db211dce9392be9b25a6a17c296cd1cd9",
     "docs/open-source/THIRD_PARTY_INVENTORY.md": "e7548eb29730c2c75cb1cc68d15759d5d84d0d3f996f1868342b9fef727af05a",
-    "docs/open-source/TRADEMARK_REVIEW.md": "463a2804ffe20277177cf51c066569036a0a77b6b0a41e6faa39b97fd87e2d26",
-    "docs/release/0.1.0.md": "9001ef629ac08841719ec48521a8aa883c4707549dc690601f1b7406b511b857",
+    "docs/open-source/TRADEMARK_REVIEW.md": "8a6971a845afd64f7fd15bf54c60fe6fac4b55571650935713174a02e35c0420",
+    "docs/release/0.1.0.md": "ad96b5eac87be3dc9d2b060e88990d5e5e405faf4d9f95676f92f1d41885f4ab",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md": "341d7340f7085d88d5186b448f0aa5ecefad31dbf293e52f940a462065648a8f",
     "script/build_and_run.sh": "39b20e6cfa265837ec73fe639d6b6e1bff8758f87306ac1bcec33cc416934dd2",
     "script/check_publication_gates.py": "be7599ce5f448d810956e32dc80bf1b402712bd2bd6e7345d11e9a406af1f886",
-    "script/check_repository_policy.py": "cfa7d876857ec0affb117768a297c748d262cbf7d49bef3ad4dca4c5b413887e",
+    "script/check_repository_policy.py": "41a179493d4585a5ec2bb15b95fedbfaa40749f0e1d92fb1642a66c21a2c9ea2",
     "script/generate_open_source_manifest.py": "b8ee5ca0e44ba7381b7fea3c17676541ec0b123dbc21c3d0644b9924e39ed93e",
-    "script/generate_sbom.py": "b58957c46e27dfd79a90864731de270876d4cca55b996881d121ab3a90daa0f6",
-    "script/package_release.sh": "498630da8bd3906a9fbde0d570c1f925e2d10b4ff144cb998e5792d4394b4779",
-    "script/publication_evidence.py": "a1badd0f5bff58a6a266cc216bfc31dfb438a5ac5ea7eeea9dc50da0a92f7362",
+    "script/generate_sbom.py": "b467d6d5347be504c1ba85f940163aba2fc765208c7c2639b4a27e9d134ce1bd",
+    "script/package_release.sh": "329a632e50f6763c9ed402c6adadfa9867301c3f6d54d99b3d738b694f65837f",
+    "script/publication_evidence.py": "6600a9ef33e30bd987973f7009740ef461a63d0c8d1f45d6691ea1d7a0fa39bc",
     "script/test_release_package.sh": "00f48d78b357420e6a107a678468d96395e477885bc4d640cf915b128bfb1cb0"
   },
   "evidence_scopes": {
@@ -131,79 +133,55 @@
       "status": "REVIEWED"
     },
     "external_manual_gates": {
-      "status": "BLOCKED",
-      "unresolved_count": 6
+      "status": "APPROVED",
+      "unresolved_count": 0
     },
     "reachable_history": {
-      "owner_exposure_decision": null,
+      "approved_git_email": "24563931+s1korrrr@users.noreply.github.com",
+      "owner_exposure_decision": "REWRITE_AUTHORIZED",
       "personal_path_exposure_detected": true,
-      "status": "OWNER_DECISION_REQUIRED"
+      "status": "REVIEW_REQUIRED",
+      "unexpected_emails": [
+        "mrsikorarafal@gmail.com",
+        "noreply@github.com"
+      ]
     }
   },
+  "governance": {
+    "copyright_owner": "Rafal Sikora",
+    "maintainer": "RSI Tech",
+    "project_contact": "info@rsitech.ai",
+    "website": "https://rsitech.ai"
+  },
   "licensing": {
-    "approved_spdx_id": null,
-    "dco_adopted": false,
-    "proposed_spdx_id": null,
-    "root_license_present": false
+    "approved_spdx_id": "Apache-2.0",
+    "dco_adopted": true,
+    "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "root_license_present": true,
+    "root_license_valid": true
   },
   "publication": {
     "blockers": [
       {
-        "code": "DCO_DECISION_REQUIRED",
-        "detail": "No contributor certificate policy has been adopted; an owner or legal decision is required.",
-        "gate": "legal",
-        "scope": "external_manual_gates"
-      },
-      {
-        "code": "FORMAL_SECURITY_SCAN_SKIPPED_BY_OWNER_REQUEST",
-        "detail": "The owner explicitly requested completion without a formal security scan; publication remains blocked unless that risk is separately accepted or a scan is completed and reviewed.",
-        "gate": "security",
-        "scope": "external_manual_gates"
-      },
-      {
-        "code": "GOVERNANCE_APPROVAL_REQUIRED",
-        "detail": "No public governance and maintainer authority model has owner approval.",
-        "gate": "owner",
-        "scope": "external_manual_gates"
-      },
-      {
-        "code": "LICENSE_APPROVAL_REQUIRED",
-        "detail": "No project license has owner or legal approval.",
-        "gate": "legal",
-        "scope": "external_manual_gates"
-      },
-      {
-        "code": "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
-        "detail": "Reachable Git history contains workstation identity/path references; the owner must approve exposure or authorize a history rewrite.",
+        "code": "PUBLISHED_HISTORY_IDENTITY_REWRITE_REQUIRED",
+        "detail": "Published HEAD history contains author or committer email outside the approved noreply identity.",
         "gate": "owner",
         "scope": "reachable_history"
       },
       {
-        "code": "ROOT_LICENSE_MISSING",
-        "detail": "The repository has no adopted root license file and therefore grants no open-source license.",
-        "gate": "legal",
-        "scope": "current_tree"
-      },
-      {
-        "code": "SECURITY_CONTACT_REQUIRED",
-        "detail": "No approved public security-reporting contact or intake channel is recorded.",
+        "code": "PUBLISHED_HISTORY_PATH_REWRITE_REQUIRED",
+        "detail": "Published HEAD history still contains workstation-specific absolute paths.",
         "gate": "owner",
-        "scope": "external_manual_gates"
-      },
-      {
-        "code": "TRADEMARK_DECISION_REQUIRED",
-        "detail": "Project naming and trademark permissions have not received owner or legal approval.",
-        "gate": "legal",
-        "scope": "external_manual_gates"
+        "scope": "reachable_history"
       }
     ],
     "status": "BLOCKED"
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "security": {
     "credential_review": {
       "current_reachable_history_status": "NOT_FORMALLY_SCANNED",
-      "current_repository_status": "UNVERIFIED",
+      "current_repository_status": "NOT_FORMALLY_SCANNED",
       "formal_scan_coverage": false,
       "historical_observation": {
         "anchor_commit": "e1f7c0a3c555e941241f710b53bb61dc04e189c3",
@@ -214,9 +192,11 @@
     },
     "formal_codex_security_scan": {
       "completed": false,
-      "status": "SKIPPED_BY_OWNER_REQUEST"
+      "risk_accepted_by_owner": true,
+      "risk_accepted_date": "2026-07-20",
+      "status": "SKIPPED_BY_OWNER_ACCEPTED_RISK"
     },
-    "security_contact": null
+    "security_contact": "info@rsitech.ai"
   },
   "source_manifest": {
     "meaning": "source-declared SwiftPM manifest compatibility requirement; not installed toolchain evidence",
