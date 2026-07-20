@@ -1,6 +1,9 @@
 import json
+import hashlib
 import os
 from pathlib import Path
+import plistlib
+import platform
 import re
 import subprocess
 import sys
@@ -15,6 +18,7 @@ GATE_CHECKER = REPO_ROOT / "script" / "check_publication_gates.py"
 POLICY_CHECKER = REPO_ROOT / "script" / "check_repository_policy.py"
 COMMITTED_MANIFEST = REPO_ROOT / "docs" / "open-source" / "OPEN_SOURCE_MANIFEST.json"
 COMMITTED_SBOM = REPO_ROOT / "artifacts" / "sbom" / "snapaction.cdx.json"
+RELEASE_PACKAGER = REPO_ROOT / "script" / "package_release.sh"
 
 
 class PublicationToolTests(unittest.TestCase):
@@ -196,6 +200,62 @@ class PublicationToolTests(unittest.TestCase):
         self.assertEqual(COMMITTED_MANIFEST.read_bytes(), self.generated_bytes(MANIFEST_GENERATOR, cwd="/"))
         self.assertEqual(COMMITTED_SBOM.read_bytes(), self.generated_bytes(SBOM_GENERATOR, cwd="/"))
 
+    def test_release_packager_builds_verified_zip_and_checksum_without_distribution_claims(self):
+        version = "0.1.0"
+        archive_name = f"SnapAction-Community-{version}-macos-{platform.machine()}.zip"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory) / "release"
+            result = subprocess.run(
+                ["bash", str(RELEASE_PACKAGER), "--output", str(output)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+            archive = output / archive_name
+            checksum = output / f"{archive_name}.sha256"
+            self.assertTrue(archive.is_file())
+            self.assertTrue(checksum.is_file())
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            self.assertEqual(checksum.read_text(encoding="utf-8"), f"{digest}  {archive_name}\n")
+
+            extracted = Path(temporary_directory) / "extracted"
+            extraction = subprocess.run(
+                ["/usr/bin/ditto", "-x", "-k", str(archive), str(extracted)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(extraction.returncode, 0, extraction.stdout + extraction.stderr)
+            app = extracted / "SnapAction Community.app"
+            plist = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
+            self.assertEqual(plist["CFBundleIdentifier"], "org.example.snapaction.community")
+            self.assertEqual(plist["CFBundleShortVersionString"], version)
+            self.assertEqual(plist["SnapActionBuildConfiguration"], "release")
+            self.assertEqual(
+                plist["SnapActionSourceURL"],
+                "https://github.com/rsitech-ai/SnapAction",
+            )
+            self.assertEqual(
+                plist["SnapActionSourceRevision"],
+                subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=REPO_ROOT,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip(),
+            )
+            signature = subprocess.run(
+                ["/usr/bin/codesign", "--verify", "--deep", "--strict", str(app)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(signature.returncode, 0, signature.stdout + signature.stderr)
+
     def test_current_tree_contains_no_tracked_workstation_paths(self):
         sys.path.insert(0, str(REPO_ROOT / "script"))
         try:
@@ -210,6 +270,32 @@ class PublicationToolTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(result.stdout, "Repository policy: PASS\n")
+
+    def test_ci_policy_rejects_a_trigger_only_no_op_workflow(self):
+        sys.path.insert(0, str(REPO_ROOT / "script"))
+        try:
+            from check_repository_policy import ci_semantic_issues
+        finally:
+            sys.path.pop(0)
+
+        no_op_ci = """
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  no-op:
+    runs-on: macos-26
+    steps:
+      - run: echo no-op
+"""
+
+        issues = ci_semantic_issues(Path(".github/workflows/ci.yml"), no_op_ci)
+        self.assertEqual(
+            {issue.code for issue in issues},
+            {"CI_REQUIRED_COMMAND_MISSING"},
+        )
+        self.assertTrue(any("script/test_release_package.sh" in issue.detail for issue in issues))
 
     def test_markdown_internal_links_resolve_inside_the_repository(self):
         broken = []

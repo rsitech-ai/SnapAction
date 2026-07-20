@@ -6,18 +6,18 @@ import Testing
 func callerResponseDeadlineTimesOutAndCooperativeChildStops() async {
     let probe = AsyncOperationProbe()
     let clock = ContinuousClock()
-    let startedAt = clock.now
-
-    let outcome = await CallerResponseDeadline.run(for: .milliseconds(25)) {
-        await probe.markStarted()
-        while !Task.isCancelled {
-            await Task.yield()
+    let task = Task {
+        await CallerResponseDeadline.run(for: .milliseconds(25)) {
+            await probe.markStarted()
+            try? await Task.sleep(for: .seconds(30))
+            await probe.markStopped()
+            return 42
         }
-        await probe.markStopped()
-        return 42
     }
 
-    #expect(outcome == .timedOut)
+    await probe.waitUntilStarted()
+    let startedAt = clock.now
+    #expect(await task.value == .timedOut)
     #expect(startedAt.duration(to: clock.now) < .milliseconds(250))
     await probe.waitUntilStopped()
 }
@@ -29,9 +29,7 @@ func callerResponseDeadlinePropagatesParentCancellationAndReturnsPromptly() asyn
     let task = Task {
         await CallerResponseDeadline.run(for: .seconds(30)) {
             await probe.markStarted()
-            while !Task.isCancelled {
-                await Task.yield()
-            }
+            try? await Task.sleep(for: .seconds(30))
             await probe.markStopped()
             return 42
         }

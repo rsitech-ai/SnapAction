@@ -19,10 +19,20 @@ ACTION_USE = re.compile(
 ANY_ACTION_USE = re.compile(r"^\s*(?:-\s+)?uses:\s+(.+?)\s*$")
 
 VERIFIED_ACTION_REVISIONS = {
-    "actions/checkout": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",  # v7.0.0
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",  # v7.0.1
     "actions/dependency-review-action": "a1d282b36b6f3519aa1f3fc636f609c47dddb294",  # v5.0.0
     "github/codeql-action": "99df26d4f13ea111d4ec1a7dddef6063f76b97e9",  # v4.37.0
 }
+
+CI_REQUIRED_COMMANDS = (
+    "swift test",
+    "swift build -c release -Xswiftc -warnings-as-errors",
+    "bash script/test_build_configuration.sh",
+    "bash script/test_bundle_metadata.sh",
+    "bash script/test_release_package.sh",
+    "python3 -m unittest discover -s Tests/ToolingTests -v",
+    "python3 script/check_repository_policy.py",
+)
 
 REQUIRED_DOCUMENTS = (
     ".editorconfig",
@@ -35,6 +45,7 @@ REQUIRED_DOCUMENTS = (
     "CHANGELOG.md",
     "Config/Community.example.env",
     "CONTRIBUTING.md",
+    "PRIVACY.md",
     "README.md",
     "RELEASING.md",
     "ROADMAP.md",
@@ -60,8 +71,10 @@ REQUIRED_DOCUMENTS = (
     "docs/open-source/THIRD_PARTY_INVENTORY.md",
     "docs/open-source/TRADEMARK_REVIEW.md",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md",
-    "docs/release/0.1.0-draft.md",
+    "docs/release/0.1.0.md",
     "artifacts/sbom/snapaction.cdx.json",
+    "script/package_release.sh",
+    "script/test_release_package.sh",
 )
 
 REQUIRED_WORKFLOW_TRIGGERS = {
@@ -85,6 +98,7 @@ REQUIRED_SECRET_IGNORES = (
     "AuthKey_*.p8",
     "*.mobileprovision",
     "*.provisionprofile",
+    ".codex/",
 )
 
 
@@ -315,6 +329,19 @@ def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
     return issues
 
 
+def ci_semantic_issues(path: Path, content: str) -> list[PolicyIssue]:
+    """Require CI to run the repository's release-critical verification commands."""
+    return [
+        PolicyIssue(
+            "CI_REQUIRED_COMMAND_MISSING",
+            path.as_posix(),
+            f"CI must run: {command}",
+        )
+        for command in CI_REQUIRED_COMMANDS
+        if command not in content
+    ]
+
+
 def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
     issues: list[PolicyIssue] = []
     workflows_directory = repo_root / ".github/workflows"
@@ -326,6 +353,8 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
             continue
         content = path.read_text(encoding="utf-8")
         issues.extend(workflow_policy_issues(path.relative_to(repo_root), content))
+        if name == "ci.yml":
+            issues.extend(ci_semantic_issues(path.relative_to(repo_root), content))
         missing_triggers = set(required_triggers) - _declared_triggers(content)
         if missing_triggers:
             issues.append(
