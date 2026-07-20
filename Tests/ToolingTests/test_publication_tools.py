@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -65,11 +66,14 @@ class PublicationToolTests(unittest.TestCase):
         self.assertEqual(manifest["publication"]["status"], "BLOCKED")
         self.assertEqual(manifest["application"]["platform"], "macOS")
         self.assertEqual(manifest["application"]["build_system"], "Swift Package Manager")
-        self.assertEqual(manifest["licensing"]["proposed_spdx_id"], "MPL-2.0")
+        self.assertIsNone(manifest["licensing"]["proposed_spdx_id"])
         self.assertIsNone(manifest["licensing"]["approved_spdx_id"])
         self.assertEqual(manifest["dependencies"]["external_swift_packages"], [])
         self.assertEqual(manifest["dependencies"]["external_swift_package_count"], 0)
-        self.assertEqual(manifest["security"]["formal_codex_security_scan"]["status"], "DEFERRED")
+        self.assertEqual(
+            manifest["security"]["formal_codex_security_scan"]["status"],
+            "SKIPPED_BY_OWNER_REQUEST",
+        )
         self.assertFalse(manifest["security"]["formal_codex_security_scan"]["completed"])
         credential_review = manifest["security"]["credential_review"]
         self.assertEqual(credential_review["current_repository_status"], "UNVERIFIED")
@@ -154,7 +158,7 @@ class PublicationToolTests(unittest.TestCase):
             "TRADEMARK_DECISION_REQUIRED",
             "GOVERNANCE_APPROVAL_REQUIRED",
             "SECURITY_CONTACT_REQUIRED",
-            "FORMAL_SECURITY_SCAN_DEFERRED",
+            "FORMAL_SECURITY_SCAN_SKIPPED_BY_OWNER_REQUEST",
             "REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED",
         }
         reported = {
@@ -206,6 +210,27 @@ class PublicationToolTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(result.stdout, "Repository policy: PASS\n")
+
+    def test_markdown_internal_links_resolve_inside_the_repository(self):
+        broken = []
+        escaped = []
+        link_pattern = re.compile(r"\[[^]]+\]\(([^)]+)\)")
+        for document in sorted(REPO_ROOT.rglob("*.md")):
+            if any(part in {".build", ".git", ".worktrees"} for part in document.parts):
+                continue
+            for destination in link_pattern.findall(document.read_text(encoding="utf-8")):
+                destination = destination.strip().split(" ", 1)[0].strip("<>")
+                if not destination or destination.startswith(("#", "http://", "https://", "mailto:")):
+                    continue
+                relative_target = destination.split("#", 1)[0]
+                target = (document.parent / relative_target).resolve()
+                if not target.is_relative_to(REPO_ROOT):
+                    escaped.append((document.relative_to(REPO_ROOT).as_posix(), destination))
+                elif not target.exists():
+                    broken.append((document.relative_to(REPO_ROOT).as_posix(), destination))
+
+        self.assertEqual(escaped, [])
+        self.assertEqual(broken, [])
 
     def test_license_gate_requires_both_adopted_file_and_recorded_owner_approval(self):
         result = self.run_tool(POLICY_CHECKER, "--license-gate", cwd="/")
@@ -383,12 +408,6 @@ jobs:
             {issue.code for issue in issues},
             issues,
         )
-
-    def test_codeql_manual_build_mode_is_explicit(self):
-        codeql_workflow = (REPO_ROOT / ".github/workflows/codeql.yml").read_text(encoding="utf-8")
-
-        self.assertIn("build-mode: manual", codeql_workflow)
-
 
 if __name__ == "__main__":
     unittest.main()

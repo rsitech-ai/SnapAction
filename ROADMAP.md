@@ -7,7 +7,7 @@ This roadmap describes technical direction, not delivery commitments or maintain
 - obtain an owner/legal license decision and adopt the approved root license;
 - decide the contributor-certificate, governance, naming, and trademark model;
 - establish an approved private security-reporting channel;
-- complete and review the deferred formal security scan;
+- resolve the skipped formal security-scan gate through completed evidence or explicit risk acceptance;
 - decide whether reachable-history workstation references are acceptable or require a separately authorized rewrite.
 
 ## Product hardening

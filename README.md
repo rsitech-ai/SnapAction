@@ -4,7 +4,7 @@ SnapAction is a local-first macOS utility that turns screen or image OCR into a 
 
 ## Publication Status
 
-This repository is **not yet licensed or approved for open-source publication**. MPL-2.0 is a proposal only; there is no adopted root license, contributor certificate, governance model, trademark decision, security contact, or completed formal security scan. External contributions are not yet accepted. See [open-source status](docs/open-source/OPEN_SOURCE_STATUS.md) and [publication blockers](docs/open-source/BLOCKERS.md).
+This repository is **not yet licensed or approved for open-source publication**. No project license has been selected; there is no adopted root license, contributor certificate, governance model, trademark decision, security contact, or completed formal security scan. External contributions are not yet accepted. See [open-source status](docs/open-source/OPEN_SOURCE_STATUS.md), [security policy status](SECURITY.md), and [publication blockers](docs/open-source/BLOCKERS.md).
 
 ## Requirements
 
@@ -14,6 +14,14 @@ This repository is **not yet licensed or approved for open-source publication**.
 - Apple Intelligence enabled for AI-first extraction
 
 The app remains useful without Apple Intelligence: it falls back to safe text/table extraction and does not silently create Reminder or Calendar candidates.
+
+## Current Limitations
+
+- The capture shortcut takes the first display; there is no display picker yet.
+- The repository stages a local ad-hoc-signed development bundle. It does not produce a notarized, sandboxed, Developer ID, or Mac App Store artifact.
+- Foundation Models availability depends on the local macOS and Apple Intelligence configuration.
+- System-wide shortcut monitoring can be limited by macOS privacy settings; focused menu commands remain available.
+- Public contributions, releases, and redistribution are closed until the legal, governance, security-intake, and naming gates are resolved.
 
 ## Run
 
@@ -74,6 +82,23 @@ python3 script/check_publication_gates.py # expected to exit 1 until owner/legal
 ```
 
 The generated source manifest is at `docs/open-source/OPEN_SOURCE_MANIFEST.json`; the CycloneDX source SBOM is at `artifacts/sbom/snapaction.cdx.json`.
+
+## Troubleshooting
+
+- If screen capture is denied, open SnapAction Settings, follow the Screen Recording guidance, and restart the app if macOS requests it.
+- If Calendar or Reminders writes are denied, review the corresponding macOS Privacy & Security permission; the app will not record the action as successful.
+- If the default bundle identity was overridden incorrectly, run `script/build_and_run.sh --print-config`; invalid values fail before build or process changes.
+- If stale clipboard data should be removed, use **Clear clipboard cache** in Settings. History has a separate clear control.
+
+## Project Policies
+
+- [Contributing](CONTRIBUTING.md) — mechanics and the current closed contribution gate.
+- [Security](SECURITY.md) — no approved private intake route yet; do not disclose vulnerabilities publicly.
+- [Support](SUPPORT.md) — safe support boundaries.
+- [Releasing](RELEASING.md) — owner-controlled release gates.
+- [Changelog](CHANGELOG.md) — factual unreleased changes.
+
+Version `0.1.0` is the proposed first community-development milestone, not a published release. There is no adopted license, so the repository currently grants no open-source use or redistribution rights.
 
 ## Architecture
 
