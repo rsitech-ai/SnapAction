@@ -238,6 +238,8 @@ import Testing
         .appendingPathComponent("SnapActionClearHistory-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: directory) }
     let url = directory.appendingPathComponent("history.json")
+    let legacyBackup = directory.appendingPathComponent("history.corrupt-123.json")
+    let unrelated = directory.appendingPathComponent("unrelated.json")
     let store = try HistoryStore(fileURL: url)
     try store.append(
         HistoryEntry(
@@ -247,11 +249,15 @@ import Testing
             outcome: .copiedToClipboard
         )
     )
+    try "PRIVATE LEGACY HISTORY".write(to: legacyBackup, atomically: true, encoding: .utf8)
+    try "keep".write(to: unrelated, atomically: true, encoding: .utf8)
 
     try store.deleteAll()
 
     #expect(try store.load().isEmpty)
     #expect(String(decoding: try Data(contentsOf: url), as: UTF8.self).contains("Private summary") == false)
+    #expect(!FileManager.default.fileExists(atPath: legacyBackup.path))
+    #expect(FileManager.default.fileExists(atPath: unrelated.path))
 }
 
 private func posixPermissions(at url: URL) throws -> Int {

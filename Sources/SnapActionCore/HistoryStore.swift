@@ -130,6 +130,7 @@ public struct HistoryStore: Sendable {
 
     public func deleteAll() throws {
         try coordinator.withLock {
+            try deleteLegacyCorruptArtifacts()
             try write([])
         }
     }
@@ -185,6 +186,11 @@ public struct HistoryStore: Sendable {
         if fileManager.fileExists(atPath: fileURL.path) {
             try fileManager.removeItem(at: fileURL)
         }
+        try deleteLegacyCorruptArtifacts()
+    }
+
+    private func deleteLegacyCorruptArtifacts() throws {
+        let fileManager = FileManager.default
         let directory = fileURL.deletingLastPathComponent()
         let prefix = "\(fileURL.deletingPathExtension().lastPathComponent).corrupt-"
         for sibling in try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
