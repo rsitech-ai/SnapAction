@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from publication_evidence import build_manifest
+from publication_evidence import APACHE_2_LICENSE_SHA256, apache_2_license_valid
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -17,12 +17,23 @@ ACTION_USE = re.compile(
     r"^\s*(?:-\s+)?uses:\s+([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*)@([^\s#]+)(?:\s+#\s*(.+))?\s*$"
 )
 ANY_ACTION_USE = re.compile(r"^\s*(?:-\s+)?uses:\s+(.+?)\s*$")
+RUN_COMMAND = re.compile(r"^\s*run:\s*(.+?)\s*$")
 
 VERIFIED_ACTION_REVISIONS = {
-    "actions/checkout": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",  # v7.0.0
+    "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",  # v7.0.1
     "actions/dependency-review-action": "a1d282b36b6f3519aa1f3fc636f609c47dddb294",  # v5.0.0
     "github/codeql-action": "99df26d4f13ea111d4ec1a7dddef6063f76b97e9",  # v4.37.0
 }
+
+CI_REQUIRED_COMMANDS = (
+    "swift test",
+    "swift build -c release -Xswiftc -warnings-as-errors",
+    "bash script/test_build_configuration.sh",
+    "bash script/test_bundle_metadata.sh",
+    "bash script/test_release_package.sh",
+    "python3 -m unittest discover -s Tests/ToolingTests -v",
+    "python3 script/check_repository_policy.py",
+)
 
 REQUIRED_DOCUMENTS = (
     ".editorconfig",
@@ -35,6 +46,9 @@ REQUIRED_DOCUMENTS = (
     "CHANGELOG.md",
     "Config/Community.example.env",
     "CONTRIBUTING.md",
+    "LICENSE",
+    "NOTICE",
+    "PRIVACY.md",
     "README.md",
     "RELEASING.md",
     "ROADMAP.md",
@@ -60,8 +74,10 @@ REQUIRED_DOCUMENTS = (
     "docs/open-source/THIRD_PARTY_INVENTORY.md",
     "docs/open-source/TRADEMARK_REVIEW.md",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md",
-    "docs/release/0.1.0-draft.md",
+    "docs/release/0.1.0.md",
     "artifacts/sbom/snapaction.cdx.json",
+    "script/package_release.sh",
+    "script/test_release_package.sh",
 )
 
 REQUIRED_WORKFLOW_TRIGGERS = {
@@ -85,6 +101,7 @@ REQUIRED_SECRET_IGNORES = (
     "AuthKey_*.p8",
     "*.mobileprovision",
     "*.provisionprofile",
+    ".codex/",
 )
 
 
@@ -315,6 +332,24 @@ def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
     return issues
 
 
+def ci_semantic_issues(path: Path, content: str) -> list[PolicyIssue]:
+    """Require CI to run the repository's release-critical verification commands."""
+    declared_commands = {
+        match.group(1).strip().strip("'\"")
+        for line in content.splitlines()
+        if (match := RUN_COMMAND.match(line))
+    }
+    return [
+        PolicyIssue(
+            "CI_REQUIRED_COMMAND_MISSING",
+            path.as_posix(),
+            f"CI must run: {command}",
+        )
+        for command in CI_REQUIRED_COMMANDS
+        if command not in declared_commands
+    ]
+
+
 def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
     issues: list[PolicyIssue] = []
     workflows_directory = repo_root / ".github/workflows"
@@ -326,6 +361,8 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
             continue
         content = path.read_text(encoding="utf-8")
         issues.extend(workflow_policy_issues(path.relative_to(repo_root), content))
+        if name == "ci.yml":
+            issues.extend(ci_semantic_issues(path.relative_to(repo_root), content))
         missing_triggers = set(required_triggers) - _declared_triggers(content)
         if missing_triggers:
             issues.append(
@@ -357,16 +394,19 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
     contribution_path = repo_root / "CONTRIBUTING.md"
     if contribution_path.is_file():
         contribution = contribution_path.read_text(encoding="utf-8")
-        if "External contributions are not yet accepted" not in contribution:
-            issues.append(
-                PolicyIssue(
-                    "CONTRIBUTION_GATE_UNCLEAR",
-                    "CONTRIBUTING.md",
-                    "external contributions must be explicitly closed pending owner decisions",
+        for required_text in (
+            "Apache License 2.0",
+            "Developer Certificate of Origin 1.1",
+            "Signed-off-by:",
+        ):
+            if required_text not in contribution:
+                issues.append(
+                    PolicyIssue(
+                        "CONTRIBUTOR_POLICY_INCOMPLETE",
+                        "CONTRIBUTING.md",
+                        required_text,
+                    )
                 )
-            )
-        if "Signed-off-by:" in contribution or re.search(r"\b(?:DCO|CLA)\s+(?:is|has been)\s+adopted\b", contribution, re.IGNORECASE):
-            issues.append(PolicyIssue("UNAPPROVED_CONTRIBUTOR_POLICY", "CONTRIBUTING.md", "DCO or CLA adoption is not approved"))
 
     issue_templates = list((repo_root / ".github/ISSUE_TEMPLATE").glob("*.yml"))
     for template in issue_templates:
@@ -381,7 +421,7 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
             )
 
     policy_documents = [repo_root / "CONTRIBUTING.md", repo_root / "SUPPORT.md", repo_root / "RELEASING.md"]
-    placeholder_pattern = re.compile(r"(?:<[^>]*(?:email|contact)[^>]*>|TODO|TBD|security@example\.)", re.IGNORECASE)
+    placeholder_pattern = re.compile(r"(?:TODO|TBD|security@example\.)", re.IGNORECASE)
     for path in policy_documents:
         if path.is_file() and placeholder_pattern.search(path.read_text(encoding="utf-8")):
             issues.append(
@@ -392,10 +432,14 @@ def repository_policy_issues(repo_root: Path = REPO_ROOT) -> list[PolicyIssue]:
                 )
             )
 
-    if not (repo_root / "LICENSE").exists() and not (repo_root / "LICENSE.md").exists() and not (repo_root / "LICENSE.txt").exists():
-        license_map = (repo_root / "docs/open-source/LICENSE_MAP.md").read_text(encoding="utf-8")
-        if "does not currently grant an open-source license" not in license_map:
-            issues.append(PolicyIssue("MISSING_LICENSE_NOT_DISCLOSED", "docs/open-source/LICENSE_MAP.md", "missing root license must remain explicit"))
+    if not apache_2_license_valid(repo_root):
+        issues.append(
+            PolicyIssue(
+                "APACHE_2_LICENSE_INVALID",
+                "LICENSE",
+                f"canonical SHA-256 must be {APACHE_2_LICENSE_SHA256}",
+            )
+        )
 
     return sorted(issues, key=lambda issue: (issue.code, issue.path, issue.detail))
 
@@ -405,13 +449,7 @@ def root_license_present(repo_root: Path = REPO_ROOT) -> bool:
 
 
 def license_gate_blockers(repo_root: Path = REPO_ROOT) -> list[str]:
-    blockers: list[str] = []
-    if not root_license_present(repo_root):
-        blockers.append("ROOT_LICENSE_MISSING")
-    approved_spdx_id = build_manifest()["licensing"]["approved_spdx_id"]
-    if not approved_spdx_id:
-        blockers.append("LICENSE_APPROVAL_REQUIRED")
-    return blockers
+    return [] if apache_2_license_valid(repo_root) else ["APACHE_2_LICENSE_INVALID"]
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -433,7 +471,7 @@ def main() -> int:
             return 0
         print(
             f"License compliance: BLOCKED ({', '.join(blockers)}) - "
-            "no owner-approved root license has been adopted and recorded."
+            "the root license does not match canonical Apache-2.0."
         )
         return 1
 

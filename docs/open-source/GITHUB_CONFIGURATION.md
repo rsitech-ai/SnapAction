@@ -1,26 +1,29 @@
 # GitHub configuration handoff
 
-Observed on 2026-07-20 for `s1korrrr/SnapAction`:
+Target public configuration for `rsitech-ai/SnapAction`, approved on 2026-07-20:
 
-- owner type: personal account;
-- visibility: private;
+- owner type: organization;
+- visibility: public after the rewritten PR is merged and release evidence passes;
 - default branch: `main`;
-- repository description, homepage, topics, detected license, branch protection, and private vulnerability reporting: not configured;
-- Actions: enabled; no runs, artifacts, caches, releases, or tags were present at inspection time;
-- the matching profile repository `s1korrrr/s1korrrr` was not present.
+- detected license: Apache-2.0 after merge; private vulnerability reporting: enable before issue intake;
+- Actions: enabled, but hosted jobs are externally blocked before execution by the GitHub account billing/spending-limit state;
+- no releases or tags existed before the `0.1.0` private-preview pass.
 
-These external settings were inspected but not changed. The only external Git operation authorized for this pass is pushing the verified `main` commit.
+The transfer preserves repository history, pull requests, and redirects. The owner separately authorized sanitizing published history before public visibility.
 
-## Proposed repository settings after publication blockers clear
+## Repository metadata
 
 - Description: “Local-first macOS utility that turns screen or image OCR into confirmed Reminders, Calendar events, or clean clipboard output.”
 - Topics: `macos`, `swift`, `swiftui`, `ocr`, `vision`, `screen-capture`, `reminders`, `calendar`, `local-first`.
-- Keep the homepage empty until an owner-approved stable destination exists.
-- Enable Issues only after contribution governance and private vulnerability intake are ready.
+- Homepage: `https://rsitech.ai`.
+
+## Repository settings
+
+- Enable Issues with structured templates and private vulnerability reporting.
 - Keep Wiki, Discussions, Projects, Pages, and sponsorship disabled unless each has an accountable maintainer and purpose.
 - Restrict Actions to approved, immutable-pinned actions; retain read-only default token permissions.
 - After CI proves reliable on `main`, protect it with pull requests, required CI, conversation resolution, force-push prevention, and branch-deletion prevention.
 - Enable dependency graph, Dependabot alerts/security updates, secret scanning/push protection, and private vulnerability reporting when the repository plan and visibility support them.
 - Recheck every protection and security setting after any visibility change.
 
-Do not make the repository public, enable intake, publish a release, add required checks, or change profile content until the corresponding owner/legal gates are resolved.
+Do not add required hosted checks while Actions remains blocked before execution by the account billing/spending-limit state. Re-evaluate protection after the first real hosted green run.

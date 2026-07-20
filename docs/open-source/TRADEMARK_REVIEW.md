@@ -1,7 +1,5 @@
-# Trademark review
+# Trademark and naming policy
 
-Status: **OWNER/LEGAL DECISION REQUIRED**.
+RSI Tech is the public SnapAction brand and maintainer. Apache License 2.0 does not grant permission to use RSI Tech or SnapAction names, marks, logos, or product identity beyond reasonable and customary descriptions of origin and reproduction of required NOTICE attribution.
 
-No trademark policy, naming permission, logo license, or official endorsement language has been approved. The community build is deliberately labeled unofficial, but that technical distinction is not a trademark grant.
-
-Before publication, the owner must decide whether public forks and redistributed binaries may use “SnapAction,” whether a rename is required, and what wording distinguishes community builds from official releases. This document records the open question; it does not create a policy.
+Unmodified redistributions may accurately identify the upstream project. Modified binaries and forks must not imply RSI Tech sponsorship, endorsement, or official status; use a clearly distinguishable name and bundle identifier unless RSI Tech grants written permission through [info@rsitech.ai](mailto:info@rsitech.ai).

@@ -1,14 +1,12 @@
-# Publication blockers
+# Publication gates
 
-The machine-readable blocker codes are stable identifiers emitted by `script/check_publication_gates.py`:
+Owner-controlled legal, brand, governance, contribution, security-contact, and history-rewrite decisions were resolved on 2026-07-20.
 
-- `LICENSE_APPROVAL_REQUIRED`
-- `ROOT_LICENSE_MISSING`
-- `DCO_DECISION_REQUIRED`
-- `TRADEMARK_DECISION_REQUIRED`
-- `GOVERNANCE_APPROVAL_REQUIRED`
-- `SECURITY_CONTACT_REQUIRED`
-- `FORMAL_SECURITY_SCAN_SKIPPED_BY_OWNER_REQUEST`
-- `REACHABLE_HISTORY_EXPOSURE_DECISION_REQUIRED`
+The publication checker remains fail-closed for repository-derived regressions:
 
-These are not implementation failures. They are explicit legal, owner, security, or reachable-history gates that this local hardening branch is not authorized to resolve unilaterally. The current tracked tree has been cleaned of workstation-specific absolute paths; the history gate remains separate.
+- missing or non-canonical Apache-2.0 root license;
+- tracked workstation paths in the current tree;
+- workstation paths in the published `HEAD` history;
+- personal author or committer email that differs from `24563931+s1korrrr@users.noreply.github.com`; GitHub and Dependabot provider noreply identities remain allowed.
+
+The skipped formal security scan is an explicit accepted risk, not a passing scan result and not a hidden blocker.

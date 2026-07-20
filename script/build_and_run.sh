@@ -86,13 +86,20 @@ case "$MODE" in
     print_config
     exit 0
     ;;
-  run|--debug|debug|--logs|logs|--telemetry|telemetry|--verify|verify)
+  run|--debug|debug|--logs|logs|--telemetry|telemetry|--verify|verify|--package|package)
     ;;
   *)
-    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify|--print-config]" >&2
+    echo "usage: $0 [run|--debug|--logs|--telemetry|--verify|--package|--print-config]" >&2
     exit 2
     ;;
 esac
+
+BUILD_CONFIGURATION="debug"
+SWIFT_BUILD_ARGUMENTS=()
+if [[ "$MODE" == "--package" || "$MODE" == "package" ]]; then
+  BUILD_CONFIGURATION="release"
+  SWIFT_BUILD_ARGUMENTS=(-c release -Xswiftc -warnings-as-errors)
+fi
 
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
@@ -118,8 +125,8 @@ while IFS= read -r staged_pid; do
   kill "$staged_pid" >/dev/null 2>&1 || true
 done < <(staged_process_pids)
 
-swift build
-BUILD_BINARY="$(swift build --show-bin-path)/$PRODUCT_NAME"
+swift build "${SWIFT_BUILD_ARGUMENTS[@]}"
+BUILD_BINARY="$(swift build -c "$BUILD_CONFIGURATION" --show-bin-path)/$PRODUCT_NAME"
 
 rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_MACOS"
@@ -157,6 +164,8 @@ cat >"$INFO_PLIST" <<PLIST
   <string>SnapAction captures the first display after you choose Capture Screen so it can recognize text and suggest actions.</string>
   <key>SnapActionSourceRevision</key>
   <string>$SOURCE_REVISION</string>
+  <key>SnapActionBuildConfiguration</key>
+  <string>$BUILD_CONFIGURATION</string>
 PLIST
 
 if [[ -n "$SOURCE_URL" ]]; then
@@ -219,5 +228,7 @@ case "$MODE" in
       echo "$APP_NAME exited before verification completed." >&2
       exit 1
     fi
+    ;;
+  --package|package)
     ;;
 esac

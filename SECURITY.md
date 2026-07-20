@@ -1,7 +1,15 @@
-# Security policy status
+# Security policy
 
-SnapAction does not yet have an approved private vulnerability-reporting channel. Do **not** disclose suspected vulnerabilities, exploit details, credentials, OCR content, clipboard content, screenshots, or workstation data in public issues or pull requests.
+## Supported versions
 
-Until an owner approves and tests a private intake route, retain vulnerability details privately. This repository does not invent or publish a maintainer address, and it does not claim that its security review is complete. Public open-source publication remains blocked on that decision and on the recorded omission of the formal security scan.
+Security fixes are provided for the latest published release and the current `main` branch. Older releases may not receive fixes.
 
-Once a private channel is approved, this file must be updated with supported versions, response expectations, safe-harbor language if adopted, and the exact reporting route before public issue intake opens.
+## Private reporting
+
+Do not disclose suspected vulnerabilities, exploit details, credentials, OCR content, clipboard content, screenshots, or workstation data in public issues or pull requests.
+
+Use GitHub's private vulnerability reporting for this repository when available, or email [info@rsitech.ai](mailto:info@rsitech.ai) with the subject `SnapAction security report`. This address is the public and confidential project contact managed by RSI Tech.
+
+Include a concise impact description, affected revision/version, safe reproduction steps, and any suggested remediation. Remove unrelated private data. RSI Tech will acknowledge a valid report as capacity permits, coordinate remediation and disclosure, and credit reporters who request attribution. No fixed response-time or bounty commitment is offered.
+
+The formal Codex Security scan was skipped by explicit owner direction for the initial publication. That omission is disclosed as an accepted residual risk and is not represented as a completed security review.

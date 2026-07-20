@@ -6,7 +6,7 @@ APP_BUNDLE="$ROOT_DIR/dist/SnapAction Community.app"
 INFO_PLIST="$APP_BUNDLE/Contents/Info.plist"
 
 cd "$ROOT_DIR"
-./script/build_and_run.sh run
+./script/build_and_run.sh --package
 
 test "$(plutil -extract NSScreenCaptureUsageDescription raw -o - "$INFO_PLIST")" = \
   "SnapAction captures the first display after you choose Capture Screen so it can recognize text and suggest actions."

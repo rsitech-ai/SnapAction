@@ -1,9 +1,9 @@
 # Open-source status
 
-Status: **BLOCKED**.
+Status: **APPROVED FOR PUBLICATION WITH DISCLOSED RESIDUAL RISK**.
 
-SnapAction is a macOS 26 Swift Package Manager application. The repository has been hardened for a future community release, but it is not currently licensed for open-source use and must not be represented as publication-ready.
+SnapAction is maintained by RSI Tech and licensed under Apache License 2.0. Copyright is held by Rafal Sikora. Contributions use Apache-2.0 inbound licensing with Developer Certificate of Origin 1.1 sign-off. Public and confidential project contact: `info@rsitech.ai`.
 
-No license is selected. No license, DCO, public security contact, trademark permission, or governance model has owner/legal approval. The formal Codex Security scan was skipped by explicit owner request; the omission remains a publication blocker unless separately accepted through the project’s approval process. See `PUBLICATION_GATE_MATRIX.md` and run `python3 script/check_publication_gates.py` for the fail-closed gate result.
+The owner explicitly authorized publication, RSI Tech naming/maintenance, the license, contribution model, security intake, and a coordinated Git-history rewrite. Personal commits use the approved maintainer noreply email; GitHub service commits may retain provider noreply identities. The formal Codex Security scan was intentionally skipped and accepted as residual risk; it is not represented as completed.
 
-The machine-readable record is `OPEN_SOURCE_MANIFEST.json`. It is regenerated from repository inputs and deliberately contains no generation timestamp or commit claim that could become stale after a later commit.
+The machine-readable record is `OPEN_SOURCE_MANIFEST.json`. Run `python3 script/check_publication_gates.py` against every exact publication and release commit.

@@ -163,6 +163,14 @@
     },
     {
       "bom-ref": "internal:SnapActionApp",
+      "copyright": "Copyright 2026 Rafal Sikora",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
       "name": "SnapActionApp",
       "properties": [
         {
@@ -180,6 +188,14 @@
     },
     {
       "bom-ref": "internal:SnapActionCore",
+      "copyright": "Copyright 2026 Rafal Sikora",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
       "name": "SnapActionCore",
       "properties": [
         {
@@ -223,6 +239,14 @@
   "metadata": {
     "component": {
       "bom-ref": "application:SnapAction",
+      "copyright": "Copyright 2026 Rafal Sikora",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
       "name": "SnapAction",
       "properties": [
         {
@@ -234,6 +258,7 @@
           "value": "macOS"
         }
       ],
+      "publisher": "RSI Tech",
       "type": "application",
       "version": "0.1.0"
     }
@@ -248,7 +273,7 @@
       "value": "6.2"
     }
   ],
-  "serialNumber": "urn:uuid:eabeb354-1a53-58e6-bbb6-3e4925e17d3b",
+  "serialNumber": "urn:uuid:9885a57c-d461-5e94-8c1e-de96711c0dad",
   "specVersion": "1.6",
   "version": 1
 }

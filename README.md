@@ -4,7 +4,7 @@ SnapAction is a local-first macOS utility that turns screen or image OCR into a 
 
 ## Publication Status
 
-This repository is **not yet licensed or approved for open-source publication**. No project license has been selected; there is no adopted root license, contributor certificate, governance model, trademark decision, security contact, or completed formal security scan. External contributions are not yet accepted. See [open-source status](docs/open-source/OPEN_SOURCE_STATUS.md), [security policy status](SECURITY.md), and [publication blockers](docs/open-source/BLOCKERS.md).
+SnapAction is maintained by [RSI Tech](https://rsitech.ai) and licensed under [Apache License 2.0](LICENSE). Copyright 2026 Rafal Sikora. Contributions are accepted under Apache-2.0 with a DCO sign-off; see [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and [Privacy](PRIVACY.md).
 
 ## Requirements
 
@@ -18,10 +18,10 @@ The app remains useful without Apple Intelligence: it falls back to safe text/ta
 ## Current Limitations
 
 - The capture shortcut takes the first display; there is no display picker yet.
-- The repository stages a local ad-hoc-signed development bundle. It does not produce a notarized, sandboxed, Developer ID, or Mac App Store artifact.
+- Local source builds use an ad-hoc-signed community identity. The initial `v0.1.0` direct-download prerelease is Developer ID signed but not notarized, sandboxed, or App Store packaged; standard Gatekeeper launch remains blocked until a notarized asset replaces it.
 - Foundation Models availability depends on the local macOS and Apple Intelligence configuration.
 - System-wide shortcut monitoring can be limited by macOS privacy settings; focused menu commands remain available.
-- Public contributions, releases, and redistribution are closed until the legal, governance, security-intake, and naming gates are resolved.
+- The formal Codex Security scan was skipped for the initial release by explicit owner direction. This is disclosed as accepted residual risk, not as completed security evidence.
 
 ## Run
 
@@ -70,15 +70,29 @@ The clipboard cache expires after seven days and can be cleared from Settings wi
 
 `script/build_and_run.sh` stages an unofficial `SnapAction Community` bundle with the neutral identifier `org.example.snapaction.community` unless a developer supplies validated overrides. See [community build configuration](docs/community-build/README.md). Official identity, signing credentials, Team IDs, and App Store credentials are not part of this repository.
 
+Download the latest Apple-silicon ZIP and SHA-256 sidecar from [GitHub Releases](https://github.com/rsitech-ai/SnapAction/releases). The official archive uses the `ai.rsitech.snapaction` identity and is signed with RSI Tech's installed Developer ID Application identity. The initial `v0.1.0` prerelease is not notarized and is rejected by Gatekeeper as `Unnotarized Developer ID`; check the release page for the exact status of later replacement assets, then verify the checksum:
+
+```bash
+shasum -a 256 -c SnapAction-0.1.0-macos-arm64.zip.sha256
+```
+
+Build the same version locally with:
+
+```bash
+bash script/package_release.sh
+```
+
 ## Repository Checks
 
 ```bash
 swift test
 swift build -c release
 bash script/test_build_configuration.sh
+bash script/test_bundle_metadata.sh
+bash script/test_release_package.sh
 python3 -m unittest discover -s Tests/ToolingTests -v
 python3 script/check_repository_policy.py
-python3 script/check_publication_gates.py # expected to exit 1 until owner/legal/security gates are resolved
+python3 script/check_publication_gates.py
 ```
 
 The generated source manifest is at `docs/open-source/OPEN_SOURCE_MANIFEST.json`; the CycloneDX source SBOM is at `artifacts/sbom/snapaction.cdx.json`.
@@ -92,13 +106,13 @@ The generated source manifest is at `docs/open-source/OPEN_SOURCE_MANIFEST.json`
 
 ## Project Policies
 
-- [Contributing](CONTRIBUTING.md) — mechanics and the current closed contribution gate.
-- [Security](SECURITY.md) — no approved private intake route yet; do not disclose vulnerabilities publicly.
+- [Contributing](CONTRIBUTING.md) — Apache-2.0 and DCO contribution mechanics.
+- [Security](SECURITY.md) — private reporting routes and supported-version scope.
 - [Support](SUPPORT.md) — safe support boundaries.
 - [Releasing](RELEASING.md) — owner-controlled release gates.
 - [Changelog](CHANGELOG.md) — factual unreleased changes.
 
-Version `0.1.0` is the proposed first community-development milestone, not a published release. There is no adopted license, so the repository currently grants no open-source use or redistribution rights.
+Version `0.1.0` is the first public RSI Tech open-source release. See [NOTICE](NOTICE) for attribution and [Apache-2.0](LICENSE) for use and redistribution terms.
 
 ## Architecture
 
