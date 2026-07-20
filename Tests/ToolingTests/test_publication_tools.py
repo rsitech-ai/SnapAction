@@ -389,6 +389,18 @@ jobs:
             {"CI_REQUIRED_COMMAND_MISSING"},
         )
 
+    def test_ci_shell_checks_do_not_require_unprovisioned_ripgrep(self):
+        for relative_path in (
+            "script/test_build_configuration.sh",
+            "script/test_bundle_metadata.sh",
+        ):
+            content = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+            self.assertNotRegex(
+                content,
+                r"(?m)^\s*(?:if\s+)?rg\s",
+                f"{relative_path} must use baseline macOS tools unless CI installs ripgrep",
+            )
+
     def test_markdown_internal_links_resolve_inside_the_repository(self):
         broken = []
         escaped = []

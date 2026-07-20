@@ -70,7 +70,7 @@ assert_contains "$override_output" "SNAP_ACTION_BUILD=37"
 assert_contains "$override_output" "SNAP_ACTION_SOURCE_URL=https://example.com/snapaction"
 assert_contains "$override_output" "SNAP_ACTION_SOURCE_REVISION=$override_revision"
 
-if rg -q 'pkill[[:space:]]+-x' "$BUILD_SCRIPT"; then
+if /usr/bin/grep -Eq 'pkill[[:space:]]+-x' "$BUILD_SCRIPT"; then
   fail "build script must not terminate every process sharing the SnapAction name"
 fi
 
