@@ -401,6 +401,14 @@ jobs:
                 f"{relative_path} must use baseline macOS tools unless CI installs ripgrep",
             )
 
+    def test_ci_checks_out_the_exact_commit_that_owns_generated_evidence(self):
+        workflow = (REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+        self.assertIn(
+            "ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+            workflow,
+        )
+
     def test_markdown_internal_links_resolve_inside_the_repository(self):
         broken = []
         escaped = []
