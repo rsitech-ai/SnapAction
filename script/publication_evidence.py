@@ -297,9 +297,9 @@ def build_manifest() -> dict[str, Any]:
                 "current_repository_status": "NOT_FORMALLY_SCANNED",
                 "formal_scan_coverage": False,
                 "historical_observation": {
-                    "anchor_commit": "e1f7c0a3c555e941241f710b53bb61dc04e189c3",
+                    "anchor_commit": "ed49cf7f3a7ebe4fc8502d9b6462a9193663ff2c",
                     "conclusion": "NO_CONFIRMED_CREDENTIAL_AT_AUDITED_BASE",
-                    "method": "prior manual repository and reachable-history audit",
+                    "method": "prior manual repository and reachable-history audit, mapped to the rewritten public base",
                     "scope": "tree and history reachable from the anchored base at the audit point",
                 },
             },

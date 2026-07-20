@@ -1,6 +1,6 @@
 # Publication GO/NO-GO
 
-Verdict: **GO after the authorized history rewrite and exact release verification**.
+Verdict: **GO for merge; public release remains contingent on exact merged-artifact verification**.
 
 | Area | Status | Evidence / remaining action |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ Verdict: **GO after the authorized history rewrite and exact release verificatio
 | Security intake | PASS | Private advisory route and `info@rsitech.ai`. |
 | Formal security scan | ACCEPTED RISK | Explicitly skipped by owner; do not claim a pass. |
 | Current tree paths | PASS | Repository policy reports none. |
-| Published history | PENDING | Complete and verify the explicitly authorized noreply/path rewrite. |
+| Published history | PASS | Live `main` and release-branch history use the approved maintainer/GitHub service noreply identities and contain no workstation path. |
 | Direct-download signing | PASS LOCALLY | Valid Developer ID Application identity for team `2NY8A789TN`; verify exact merged artifact. |
 | Notarization | EXTERNAL | No notarytool keychain profile found; publish the exact result, never infer it. |
 | GitHub hosted CI | BLOCKED:EXTERNAL | Account billing/spending-limit state prevents job start; local/review evidence remains required. |

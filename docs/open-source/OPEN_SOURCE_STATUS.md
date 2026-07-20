@@ -6,4 +6,4 @@ SnapAction is maintained by RSI Tech and licensed under Apache License 2.0. Copy
 
 The owner explicitly authorized publication, RSI Tech naming/maintenance, the license, contribution model, security intake, and a coordinated Git-history rewrite. Personal commits use the approved maintainer noreply email; GitHub service commits may retain provider noreply identities. The formal Codex Security scan was intentionally skipped and accepted as residual risk; it is not represented as completed.
 
-The machine-readable record is `OPEN_SOURCE_MANIFEST.json`. Run `python3 script/check_publication_gates.py` against the exact publication commit after the history rewrite.
+The machine-readable record is `OPEN_SOURCE_MANIFEST.json`. Run `python3 script/check_publication_gates.py` against every exact publication and release commit.

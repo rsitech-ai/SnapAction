@@ -94,7 +94,7 @@ class PublicationToolTests(unittest.TestCase):
         self.assertFalse(credential_review["formal_scan_coverage"])
         self.assertEqual(
             credential_review["historical_observation"]["anchor_commit"],
-            "e1f7c0a3c555e941241f710b53bb61dc04e189c3",
+            "ed49cf7f3a7ebe4fc8502d9b6462a9193663ff2c",
         )
         self.assertEqual(
             credential_review["historical_observation"]["conclusion"],
