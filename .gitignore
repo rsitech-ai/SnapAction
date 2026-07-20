@@ -11,6 +11,7 @@ __pycache__/
 .superpowers/
 .worktrees/
 .codex/
+.cursor/
 docs/superpowers/plans/*.tmp
 
 # Local official-release identity and Apple signing credentials.

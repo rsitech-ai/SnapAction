@@ -1,9 +1,24 @@
 # Secret audit
 
-An earlier manual review mapped to published rewritten base commit `ed49cf7f3a7ebe4fc8502d9b6462a9193663ff2c` found **no confirmed credential at that audited base** in its tree and history reachable at the time. This historical observation predates the rewrite and is not a conclusion about the current branch or its current reachable history.
+## Current scan (2026-07-20)
 
-The current repository and reachable history are **NOT FORMALLY SCANNED**. The historical observation does not cover later commits, unavailable refs, or external systems and does not remove the need to rotate a credential if one is later validated.
+Tool: **Gitleaks 8.30.1** (`gitleaks detect --no-git` on the working tree; `gitleaks git` on reachable history).
 
-The owner explicitly requested publication without the formal Codex Security scan and accepted the residual risk on 2026-07-20. That omission is disclosed and is not converted into a passing scan result.
+Result: **no confirmed credentials**. Gitleaks reported `generic-api-key` hits that are SHA-256 content hashes inside `docs/open-source/OPEN_SOURCE_MANIFEST.json` (`evidence_inputs` file digests). Those digests are integrity evidence, not secrets. Fingerprints are listed in `.gitleaksignore`.
 
-The evidence generators do not read arbitrary environment variables, do not emit environment values, and never record suspected secret values. Local signing material and official identity configuration remain ignored by Git.
+Scope covered:
+
+- current working tree (excluding ignored build products);
+- all commits reachable from published `main` / release tags after the authorized history rewrite.
+
+Scope not covered / residual risk:
+
+- unavailable or deleted refs outside the published rewrite;
+- external systems, Keychain items, notarization credentials, and local unsigned env files;
+- the formal Codex Security scan, which remains skipped by explicit owner direction (accepted residual risk, not a pass).
+
+## Historical observation
+
+An earlier manual review mapped to published rewritten base commit `ed49cf7f3a7ebe4fc8502d9b6462a9193663ff2c` found **no confirmed credential at that audited base** in its tree and history reachable at the time.
+
+If a real credential is later validated, treat it as compromised and rotate it. Evidence generators do not read arbitrary environment variables, do not emit environment values, and never record suspected secret values. Local signing material and official identity configuration remain ignored by Git.

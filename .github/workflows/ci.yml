@@ -36,5 +36,7 @@ jobs:
         run: bash script/test_release_package.sh
       - name: Test publication tooling
         run: python3 -m unittest discover -s Tests/ToolingTests -v
+      - name: Check publication gates
+        run: python3 script/check_publication_gates.py
       - name: Check repository policy
         run: python3 script/check_repository_policy.py
