@@ -3,7 +3,6 @@ import hashlib
 import os
 from pathlib import Path
 import plistlib
-import platform
 import re
 import subprocess
 import sys
@@ -202,7 +201,7 @@ class PublicationToolTests(unittest.TestCase):
 
     def test_release_packager_builds_verified_zip_and_checksum_without_distribution_claims(self):
         version = "0.1.0"
-        archive_name = f"SnapAction-Community-{version}-macos-{platform.machine()}.zip"
+        archive_name = f"SnapAction-Community-{version}-macos-arm64.zip"
         with tempfile.TemporaryDirectory() as temporary_directory:
             output = Path(temporary_directory) / "release"
             result = subprocess.run(
@@ -255,6 +254,43 @@ class PublicationToolTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(signature.returncode, 0, signature.stdout + signature.stderr)
+            architecture = subprocess.run(
+                ["/usr/bin/lipo", "-archs", str(app / "Contents" / "MacOS" / "SnapAction")],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(architecture.returncode, 0, architecture.stdout + architecture.stderr)
+            self.assertEqual(architecture.stdout.strip(), "arm64")
+
+            second_output = Path(temporary_directory) / "release-second"
+            second_result = subprocess.run(
+                ["bash", str(RELEASE_PACKAGER), "--output", str(second_output)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(second_result.returncode, 0, second_result.stdout + second_result.stderr)
+            self.assertEqual(archive.read_bytes(), (second_output / archive_name).read_bytes())
+
+    def test_release_packager_rejects_a_dirty_source_tree(self):
+        probe = REPO_ROOT / "release-dirty-probe.tmp"
+        self.assertFalse(probe.exists())
+        probe.write_text("uncommitted release input\n", encoding="utf-8")
+        try:
+            result = subprocess.run(
+                ["bash", str(RELEASE_PACKAGER)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        finally:
+            probe.unlink(missing_ok=True)
+
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("clean source tree", result.stderr)
 
     def test_current_tree_contains_no_tracked_workstation_paths(self):
         sys.path.insert(0, str(REPO_ROOT / "script"))
@@ -296,6 +332,23 @@ jobs:
             {"CI_REQUIRED_COMMAND_MISSING"},
         )
         self.assertTrue(any("script/test_release_package.sh" in issue.detail for issue in issues))
+
+        commented_commands = "\n".join(
+            f"      # run: {command}" for command in (
+                "swift test",
+                "swift build -c release -Xswiftc -warnings-as-errors",
+                "bash script/test_build_configuration.sh",
+                "bash script/test_bundle_metadata.sh",
+                "bash script/test_release_package.sh",
+                "python3 -m unittest discover -s Tests/ToolingTests -v",
+                "python3 script/check_repository_policy.py",
+            )
+        )
+        commented_ci = no_op_ci + commented_commands
+        self.assertEqual(
+            {issue.code for issue in ci_semantic_issues(Path(".github/workflows/ci.yml"), commented_ci)},
+            {"CI_REQUIRED_COMMAND_MISSING"},
+        )
 
     def test_markdown_internal_links_resolve_inside_the_repository(self):
         broken = []

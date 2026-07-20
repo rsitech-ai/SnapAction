@@ -17,6 +17,7 @@ ACTION_USE = re.compile(
     r"^\s*(?:-\s+)?uses:\s+([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*)@([^\s#]+)(?:\s+#\s*(.+))?\s*$"
 )
 ANY_ACTION_USE = re.compile(r"^\s*(?:-\s+)?uses:\s+(.+?)\s*$")
+RUN_COMMAND = re.compile(r"^\s*run:\s*(.+?)\s*$")
 
 VERIFIED_ACTION_REVISIONS = {
     "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",  # v7.0.1
@@ -331,6 +332,11 @@ def workflow_policy_issues(path: Path, content: str) -> list[PolicyIssue]:
 
 def ci_semantic_issues(path: Path, content: str) -> list[PolicyIssue]:
     """Require CI to run the repository's release-critical verification commands."""
+    declared_commands = {
+        match.group(1).strip().strip("'\"")
+        for line in content.splitlines()
+        if (match := RUN_COMMAND.match(line))
+    }
     return [
         PolicyIssue(
             "CI_REQUIRED_COMMAND_MISSING",
@@ -338,7 +344,7 @@ def ci_semantic_issues(path: Path, content: str) -> list[PolicyIssue]:
             f"CI must run: {command}",
         )
         for command in CI_REQUIRED_COMMANDS
-        if command not in content
+        if command not in declared_commands
     ]
 
 
