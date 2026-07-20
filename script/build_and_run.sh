@@ -125,7 +125,12 @@ while IFS= read -r staged_pid; do
   kill "$staged_pid" >/dev/null 2>&1 || true
 done < <(staged_process_pids)
 
-swift build "${SWIFT_BUILD_ARGUMENTS[@]}"
+# bash + set -u rejects an empty "${array[@]}" expansion.
+if [[ ${#SWIFT_BUILD_ARGUMENTS[@]} -eq 0 ]]; then
+  swift build
+else
+  swift build "${SWIFT_BUILD_ARGUMENTS[@]}"
+fi
 BUILD_BINARY="$(swift build -c "$BUILD_CONFIGURATION" --show-bin-path)/$PRODUCT_NAME"
 
 rm -rf "$APP_BUNDLE"

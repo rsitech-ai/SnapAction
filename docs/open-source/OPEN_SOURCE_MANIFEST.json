@@ -113,7 +113,7 @@
     "docs/open-source/TRADEMARK_REVIEW.md": "8a6971a845afd64f7fd15bf54c60fe6fac4b55571650935713174a02e35c0420",
     "docs/release/0.1.0.md": "5446dc986863a2f1a60a82dbc44f16ad32862b50fbf7333d80b72b09eb5c055d",
     "docs/release/MAC_APP_STORE_RELEASE_PLAYBOOK.md": "341d7340f7085d88d5186b448f0aa5ecefad31dbf293e52f940a462065648a8f",
-    "script/build_and_run.sh": "39b20e6cfa265837ec73fe639d6b6e1bff8758f87306ac1bcec33cc416934dd2",
+    "script/build_and_run.sh": "d571ec9596376bbf4ea91f255f1dfece46f61e1f17905e3201fbd25545af8084",
     "script/check_publication_gates.py": "be7599ce5f448d810956e32dc80bf1b402712bd2bd6e7345d11e9a406af1f886",
     "script/check_repository_policy.py": "24ac738e2561e17b9e44aae47855984679cfc4b985004d858a44cf1451ff1b53",
     "script/generate_open_source_manifest.py": "b8ee5ca0e44ba7381b7fea3c17676541ec0b123dbc21c3d0644b9924e39ed93e",
