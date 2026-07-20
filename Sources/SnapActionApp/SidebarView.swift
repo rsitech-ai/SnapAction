@@ -53,9 +53,9 @@ struct SidebarView: View {
             } else {
                 ForEach(appState.filteredHistory) { entry in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.candidates.first?.title ?? "Captured text")
+                        Text(entry.title)
                             .lineLimit(1)
-                        Text(entry.result?.displayMessage ?? entry.capturedAt.formatted())
+                        Text("\(entry.outcome.displayMessage) · \(entry.capturedAt.formatted())")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)

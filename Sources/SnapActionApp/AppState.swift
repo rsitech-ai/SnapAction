@@ -7,7 +7,10 @@ import SnapActionCore
 @MainActor
 @Observable
 final class AppState {
-    private let logger = Logger(subsystem: "com.s1kor.snapaction", category: "Workflow")
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "org.example.snapaction.community",
+        category: "Workflow"
+    )
 
     var currentDocument: OCRDocument? {
         didSet {
@@ -149,9 +152,9 @@ final class AppState {
         let query = historySearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return history }
         return history.filter { entry in
-            entry.ocrText.localizedCaseInsensitiveContains(query)
-                || entry.candidates.contains { $0.title.localizedCaseInsensitiveContains(query) }
-                || (entry.result?.displayMessage.localizedCaseInsensitiveContains(query) ?? false)
+            entry.title.localizedCaseInsensitiveContains(query)
+                || entry.kind.displayName.localizedCaseInsensitiveContains(query)
+                || entry.outcome.displayMessage.localizedCaseInsensitiveContains(query)
         }
     }
 
@@ -335,6 +338,31 @@ final class AppState {
         }
     }
 
+    func clearHistory() {
+        settingsErrorMessage = nil
+        do {
+            try historyStore.deleteAll()
+            history = []
+            logger.info("History summaries cleared")
+        } catch {
+            settingsErrorMessage = "Could not clear history. Check local storage access and try again."
+            logger.error("History clear failed")
+        }
+    }
+
+    func clearSavedClipboard() {
+        settingsErrorMessage = nil
+        do {
+            try clipboardStore.clear()
+            lastClipboardSnapshot = nil
+            clipboardStatus = "No saved clipboard yet"
+            logger.info("Saved clipboard cleared")
+        } catch {
+            settingsErrorMessage = "Could not clear the saved clipboard. Check local storage access and try again."
+            logger.error("Saved clipboard clear failed")
+        }
+    }
+
     func dismissSettingsError() {
         settingsErrorMessage = nil
     }
@@ -378,15 +406,28 @@ final class AppState {
     }
 
     private func refreshHistory() {
-        history = (try? historyStore.load()) ?? []
+        do {
+            history = try historyStore.load()
+        } catch {
+            history = []
+            settingsErrorMessage = "Could not read history. Check local storage access and try again."
+            logger.error("History refresh failed")
+        }
     }
 
     private func refreshClipboardSnapshot() {
-        lastClipboardSnapshot = try? clipboardStore.load()
-        if let lastClipboardSnapshot {
-            clipboardStatus = "Ready: \(lastClipboardSnapshot.title)"
-        } else {
+        do {
+            lastClipboardSnapshot = try clipboardStore.load()
+            if let lastClipboardSnapshot {
+                clipboardStatus = "Ready: \(lastClipboardSnapshot.title)"
+            } else {
+                clipboardStatus = "No saved clipboard yet"
+            }
+        } catch {
+            lastClipboardSnapshot = nil
             clipboardStatus = "No saved clipboard yet"
+            settingsErrorMessage = "Could not read the saved clipboard. Check local storage access and try again."
+            logger.error("Saved clipboard refresh failed")
         }
     }
 

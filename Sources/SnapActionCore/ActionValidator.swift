@@ -1,11 +1,24 @@
 import Foundation
 
 public struct ActionValidator: Sendable {
-    private let now: Date
+    private let nowProvider: @Sendable () -> Date
     private let minimumWriteConfidence: Double
 
-    public init(now: Date = Date(), minimumWriteConfidence: Double = 0.5) {
-        self.now = now
+    public init(minimumWriteConfidence: Double = 0.5) {
+        self.nowProvider = { Date() }
+        self.minimumWriteConfidence = minimumWriteConfidence
+    }
+
+    public init(now: Date, minimumWriteConfidence: Double = 0.5) {
+        self.nowProvider = { now }
+        self.minimumWriteConfidence = minimumWriteConfidence
+    }
+
+    public init(
+        nowProvider: @escaping @Sendable () -> Date,
+        minimumWriteConfidence: Double = 0.5
+    ) {
+        self.nowProvider = nowProvider
         self.minimumWriteConfidence = minimumWriteConfidence
     }
 
@@ -16,6 +29,7 @@ public struct ActionValidator: Sendable {
     }
 
     private func state(for candidate: ActionCandidate) -> ValidationState {
+        let now = nowProvider()
         guard !candidate.title.isEmpty else {
             return .invalid("Action title is required.")
         }
@@ -32,7 +46,7 @@ public struct ActionValidator: Sendable {
                 guard let parsedDueDate = parseDate(dueDate) else {
                     return .invalid("Reminder due date is not a valid ISO-8601 date.")
                 }
-                if sourceMentionsTomorrow(candidate.sourceText), !isTomorrow(parsedDueDate) {
+                if sourceMentionsTomorrow(candidate.sourceText), !isTomorrow(parsedDueDate, relativeTo: now) {
                     return .invalid("Reminder due date does not match the source text.")
                 }
             }
@@ -47,7 +61,7 @@ public struct ActionValidator: Sendable {
             guard let parsedStart = parseDate(startDate) else {
                 return .invalid("Calendar start date is not a valid ISO-8601 date.")
             }
-            if sourceMentionsTomorrow(candidate.sourceText), !isTomorrow(parsedStart) {
+            if sourceMentionsTomorrow(candidate.sourceText), !isTomorrow(parsedStart, relativeTo: now) {
                 return .invalid("Calendar start date does not match the source text.")
             }
             if parsedStart < now.addingTimeInterval(-60) {
@@ -84,7 +98,7 @@ public struct ActionValidator: Sendable {
         sourceText.range(of: #"\btomorrow\b"#, options: [.regularExpression, .caseInsensitive]) != nil
     }
 
-    private func isTomorrow(_ date: Date) -> Bool {
+    private func isTomorrow(_ date: Date, relativeTo now: Date) -> Bool {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .current
         guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: now) else {

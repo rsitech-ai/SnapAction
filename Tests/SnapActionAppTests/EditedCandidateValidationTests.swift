@@ -101,7 +101,7 @@ func confirmedEditedTitleBecomesCurrentAndPersistsInHistory() async throws {
     }
 
     #expect(appState.selectedCandidate?.title == "Reviewed fixture title")
-    #expect(appState.history.first?.candidates.first?.title == "Reviewed fixture title")
+    #expect(appState.history.first?.title == "Reviewed fixture title")
     #expect(appState.lastExecutionResult == .copiedToClipboard)
 }
 

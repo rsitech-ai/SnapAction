@@ -63,13 +63,33 @@ public struct CaptureWorkflow: Sendable {
         confirmed: Bool,
         in session: CaptureSession
     ) async throws -> ActionExecutionResult {
-        let result = try await executor.execute(candidate, confirmed: confirmed)
+        guard session.candidates.contains(where: { $0.id == candidate.id }) else {
+            return .failed(message: "This action is no longer available. Capture it again before trying to execute it.")
+        }
+
+        let normalizedCandidate = ActionCandidate(
+            id: candidate.id,
+            kind: candidate.kind,
+            title: candidate.title,
+            confidence: candidate.confidence,
+            sourceText: candidate.sourceText,
+            fields: candidate.fields,
+            validationState: .pending,
+            extractionProvenance: candidate.extractionProvenance
+        )
+        let validatedCandidate = validator.validated(normalizedCandidate)
+        guard validatedCandidate.validationState == .valid else {
+            return .failed(message: "This action is not valid. Review it before trying again.")
+        }
+
+        let result = try await executor.execute(validatedCandidate, confirmed: confirmed)
         if confirmed {
             try historyStore.append(
                 HistoryEntry(
-                    document: session.document,
-                    candidates: session.candidates,
-                    result: result
+                    capturedAt: session.document.capturedAt,
+                    title: validatedCandidate.title,
+                    kind: validatedCandidate.kind,
+                    outcome: HistoryOutcome(result)
                 )
             )
         }

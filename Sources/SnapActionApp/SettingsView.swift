@@ -3,6 +3,8 @@ import SwiftUI
 
 struct SettingsView: View {
     let appState: AppState
+    @State private var showingClearHistoryConfirmation = false
+    @State private var showingClearClipboardConfirmation = false
 
     var body: some View {
         Form {
@@ -68,13 +70,48 @@ struct SettingsView: View {
                             .help("Dismiss the history settings error")
                     }
                 }
-                Text("History stores OCR text, candidates, timestamps, and execution results. Screenshot pixels are not stored.")
+                Button("Clear History…", role: .destructive) {
+                    showingClearHistoryConfirmation = true
+                }
+                .help("Delete all saved action summaries")
+
+                Text("History stores only action titles, kinds, timestamps, and bounded outcomes. OCR text, candidate fields, system identifiers, and screenshot pixels are not stored.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Section("Saved Clipboard") {
+                Button("Clear Saved Clipboard…", role: .destructive) {
+                    showingClearClipboardConfirmation = true
+                }
+                .disabled(appState.lastClipboardSnapshot == nil)
+                .help("Delete the locally cached clipboard payload")
+
+                Text("The most recent copied text is cached for up to seven days so it can be restored after relaunch. Clear it here at any time.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .formStyle(.grouped)
         .padding(SnapActionDesign.spacingM)
-        .frame(width: 620, height: 520)
+        .frame(width: 620, height: 620)
+        .confirmationDialog(
+            "Clear all history summaries?",
+            isPresented: $showingClearHistoryConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Clear History", role: .destructive, action: appState.clearHistory)
+        } message: {
+            Text("This removes all saved action summaries from this Mac and cannot be undone.")
+        }
+        .confirmationDialog(
+            "Clear the saved clipboard payload?",
+            isPresented: $showingClearClipboardConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Clear Saved Clipboard", role: .destructive, action: appState.clearSavedClipboard)
+        } message: {
+            Text("This removes the cached text from SnapAction. The current system clipboard is not changed.")
+        }
     }
 }
